@@ -1,0 +1,13 @@
+name: coffee_cocoa
+version: 1.0.0
+config-version: 2
+profile: coffee_cocoa
+model-paths: [models]
+target-path: target
+clean-targets: [target]
+models:
+  coffee_cocoa:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

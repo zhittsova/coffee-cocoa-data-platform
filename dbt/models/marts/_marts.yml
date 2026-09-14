@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: monthly_benchmark_prices
+    description: Nominal USD/kg prices and adjacent observed-month changes, without filling missing months.
+    columns:
+      - name: source_dataset
+        data_tests: [not_null]
+      - name: series_id
+        data_tests: [not_null]
+      - name: period_month
+        data_tests: [not_null]
+      - name: source_capture_id
+        data_tests: [not_null]

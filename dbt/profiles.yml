@@ -1,0 +1,7 @@
+coffee_cocoa:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('COFFEE_COCOA_DUCKDB_PATH', ':memory:') }}"
+      threads: 2

@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: world_bank_prices
+    description: World Bank Commodity Price Data monthly workbook, selected benchmark cells in USD/kg.
+    tables:
+      - name: monthly_prices
+        description: One selected series and reference month per captured workbook.
+        config:
+          external_location: "{{ env_var('COFFEE_COCOA_HOME', '.') }}/data/parquet/benchmark_prices.parquet"
+        columns:
+          - name: source_dataset
+            data_tests: [not_null]
+          - name: series_id
+            data_tests: [not_null]
+          - name: period_month
+            data_tests: [not_null]

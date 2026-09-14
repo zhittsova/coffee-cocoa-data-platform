@@ -1,6 +1,7 @@
 # Architecture
 
-Status: design for implementation. Components and guarantees below are planned.
+Status: the World Bank price path is implemented locally. Trade, forecasting,
+read snapshots, recovery and deployment controls below remain planned.
 
 ## Responsibilities
 

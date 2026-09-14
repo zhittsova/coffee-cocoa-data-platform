@@ -1,9 +1,10 @@
 # Data contracts
 
-Status: source contract version 2, inspected on 2026-09-14. The supported trade
+Status: source contract version 2, inspected on 2026-09-14. The benchmark adapter
+and monthly dbt result are implemented; the supported trade
 scope is Germany, 33 annual CN8 leaves and both flows from January 2017 through
 the latest observed periods below. Bounded source samples and annual mappings
-were checked; adapters, models and a complete history download are not implemented.
+were checked; trade adapters, models and a complete trade history download are not implemented.
 
 ## Benchmarks
 
@@ -24,6 +25,25 @@ through the analytical window beginning January 2015. History is revisable. One
 capture supplies all requested months; blanks remain missing and incompatible
 headers or units fail validation. Trade prices remain in EUR and benchmarks in
 USD. Currency conversion requires a separately specified FX source.
+
+The benchmark capture writes one row per selected series and represented month
+to `data/parquet/benchmark_prices.parquet`, with nullable `decimal(20,8)` prices
+rounded half-even and the original worksheet numeric XML text retained. Blank
+cells and recognized `..`, `n.a.` and `N/A` markers stay null; other text fails
+validation. Wholly absent months produce no rows. The current file is
+replaced only after workbook validation and staged Parquet verification.
+`data/parquet/benchmark_prices.json` records the requested range, actual latest
+observed month by series, source update label and parsed date where available,
+source/effective URLs, UTC retrieval time, SHA-256, byte and row counts,
+missingness, schema version and source descriptions. Original workbook bytes
+remain under `data/raw/` by checksum. The fixture uses the same adapter with
+synthetic source values and a synthetic URI.
+
+dbt reads the Parquet source, exposes a staging view and builds
+`monthly_benchmark_prices` in DuckDB. Its change columns compare only adjacent
+observed reference months; missing prices or a skipped month yield null changes.
+Dagster links the workbook asset to both dbt models. Importing its definitions
+reads the checked-in dbt manifest but does not fetch or materialize data.
 
 The [dataset terms](https://www.worldbank.org/ext/en/legal/terms-conditions/datasets)
 include additional conditions and exceptions for third-party data. Keep World
