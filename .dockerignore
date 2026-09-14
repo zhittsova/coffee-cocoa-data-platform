@@ -16,6 +16,7 @@ warehouse/
 .state/
 target/
 dbt_packages/
+dbt/.user.yml
 logs/
 **/target/
 **/dbt_packages/

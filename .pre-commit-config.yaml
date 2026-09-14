@@ -23,6 +23,12 @@ repos:
         entry: uv run ruff format
         language: system
         types_or: [python, pyi]
+      - id: sqlfluff-lint
+        name: SQLFluff dbt lint
+        entry: uv run --locked sqlfluff lint dbt/models dbt/tests
+        language: system
+        types: [sql]
+        pass_filenames: false
       - id: conventional-commit
         name: Conventional commit message
         entry: uv run cz check --commit-msg-file

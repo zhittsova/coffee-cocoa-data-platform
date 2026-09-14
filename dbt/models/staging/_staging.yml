@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: stg_benchmark_prices
+    description: Validated monthly benchmark observations at source, series and reference-month grain.
+    columns:
+      - name: series_id
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [cocoa, coffee_arabica, coffee_robusta]
+      - name: period_month
+        data_tests: [not_null]
+      - name: source_capture_id
+        data_tests: [not_null]
