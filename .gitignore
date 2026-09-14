@@ -1,0 +1,41 @@
+# Local Python environment and generated package files
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+.coverage
+htmlcov/
+build/
+dist/
+
+# Local captures, warehouse and tool output
+data/
+warehouse/
+.state/
+target/
+dbt_packages/
+logs/
+*.duckdb*
+*.db
+*.parquet
+*.sqlite*
+.ipynb_checkpoints/
+
+# Credentials and infrastructure state
+.env
+.env.*
+!.env.example
+.secrets/
+secrets/
+credentials/
+*.pem
+*.key
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan
+.terraform/

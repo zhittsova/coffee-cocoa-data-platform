@@ -1,0 +1,34 @@
+[build-system]
+requires = ["uv_build>=0.12.11,<0.13.0"]
+build-backend = "uv_build"
+
+[project]
+name = "coffee-cocoa-platform"
+version = "0.0.0"
+description = "Local coffee and cocoa data platform foundation"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dagster>=1.11,<2",
+    "dagster-dbt>=0.27,<1",
+    "dbt-core>=1.10,<2",
+    "dbt-duckdb>=1.10,<2",
+    "duckdb>=1.4,<2",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4,<5",
+    "pytest>=8,<10",
+    "ruff>=0.13,<1",
+]
+notebooks = [
+    "ipykernel>=6,<8",
+    "jupyterlab>=4,<5",
+]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
