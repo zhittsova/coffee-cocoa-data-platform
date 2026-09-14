@@ -1,6 +1,6 @@
 # Local project foundation
 
-Status: specified; implementation and validation not run.
+Status: foundation implemented; pipeline assets follow later.
 
 ## Goal
 
@@ -11,7 +11,8 @@ pipeline; it does not claim to implement ingestion, models or forecasts.
 ## Scope
 
 Create a root `pyproject.toml`, committed `uv.lock`, explicit Python pin, and an
-installable `src/coffee_cocoa_platform` package. Resolve dbt Core, dbt-duckdb,
+installable `src/coffee_cocoa_platform` package using the `uv_build` backend
+from `uv init --package`. Resolve dbt Core, dbt-duckdb,
 DuckDB, Dagster and dagster-dbt as one compatible dependency graph.
 
 Keep Ruff, pre-commit and test tooling in a project-locked development group.
@@ -19,9 +20,16 @@ Notebook dependencies are optional. Add forecast and Ansible groups when their
 features introduce actual requirements. Do not install speculative dependencies
 or publish empty directories to imply functionality.
 
-Define configuration/data paths, Git ignores and Docker context exclusions.
+Define configuration/data paths and ignore generated data, state and credentials
+in Git. Keep local working notes and assistant files out of container contexts;
+track AGENTS.md and CLAUDE.md as public workflow guidance.
 The README describes actual installed capabilities and links to the design.
-Choose one supported Dagster integration style after checking the resolved stack.
+Use Pythonic Dagster `Definitions` and `@dbt_assets` with `DbtCliResource` for
+the first pipeline assets. The locked versions expose these APIs. Components
+would add a configuration layer without a current need.
+
+Python 3.12 is the supported interpreter line for this foundation. The local
+pin is 3.12.14; other interpreter lines are outside this feature's support claim.
 
 ## Acceptance and validation
 
