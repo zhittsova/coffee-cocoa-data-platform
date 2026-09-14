@@ -15,3 +15,7 @@ pipeline steps.
 
 Read the [project design](design/README.md) for the planned architecture, data
 contracts and first implementation feature.
+
+Pull requests run the locked local checks, package smoke test and conventional
+title check. Main requires those checks, a PR and signed commits; it rejects force
+pushes and deletion. There is no required self-approval for the solo maintainer.
