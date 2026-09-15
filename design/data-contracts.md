@@ -1,10 +1,10 @@
 # Data contracts
 
-Status: source contract version 2, inspected on 2026-09-14. The benchmark adapter
-and monthly dbt result are implemented; the supported trade
-scope is Germany, 33 annual CN8 leaves and both flows from January 2017 through
-the latest observed periods below. Bounded source samples and annual mappings
-were checked; trade adapters, models and a complete trade history download are not implemented.
+Status: source contract version 2, inspected on 2026-09-14. The benchmark adapter,
+monthly benchmark result, bounded trade adapter and trade staging model are
+implemented. The supported trade scope is Germany, 33 annual CN8 leaves and both
+flows from January 2017 through the latest observed periods below. A complete
+trade history download and analytical trade marts are not implemented.
 
 ## Benchmarks
 
@@ -107,6 +107,20 @@ using its [JSON-stat endpoint](https://ec.europa.eu/eurostat/api/comext/dissemin
 | Partner meaning | Export destination; extra-EU import origin; intra-EU import consignment |
 | Missingness / status | Sparse absence differs from zero; inspected responses provide no observation status |
 
+The trade adapter writes represented value or status cells to
+`data/parquet/trade_observations.parquet` at the grain above. It retains the
+source numeric text, decimal value, nullable source status, status-field
+availability, annual CN identity, response checksum and source update timestamp.
+Sparse coordinates produce no row. A supplied status with no numeric value does
+produce a row, so unavailable values do not become zero or disappear.
+
+dbt joins the 33-leaf validity mapping and exposes `stg_trade_observations`. The
+model labels imports and exports, converts source quantity units from 100 kg to
+kg, and classifies partners as named, special or aggregate. Aggregate rows are
+marked as non-detail and remain separate from named and special partners. The
+`18069090` rows use distinct `2017-2021` and `2022-2026` comparability segments.
+No trade total or concentration measure is built in this staging feature.
+
 These meanings follow [publisher methodology](https://ec.europa.eu/eurostat/cache/metadata/en/ext_go_detail_sims.htm).
 Trade balances and unit values do not measure profits, processing margins or
 crop origin on every route. Preserve the 2020/2021 UK reporting transition and
@@ -190,6 +204,18 @@ jobs and partial responses cannot become authoritative empty data. Require all
 50 slices before claiming transport completion, then evaluate sparse coverage and
 reconciliation separately. Mixed source-update timestamps require review; one
 shared timestamp still does not prove an atomic upstream snapshot.
+
+The implemented `full` command applies this year/product slicing recipe to an
+explicit subset of the supported bounds; the complete bounds produce 50 slices.
+It omits the partner filter. The `smoke` command keeps
+the original two leaves and five partner codes. It resumes only validated response
+checksums for the identical plan. Publication requires every planned slice, one
+known 278-code partner universe for full slices, exact requested dimensions,
+unique natural keys and one reported source update timestamp. The manifest records
+per-series latest value, quantity and paired months. The full trade budget reserves
+the benchmark adapter's 2 MiB response ceiling, so both sources remain within the
+64 MiB profile cap. These transport checks do not turn sparse source coverage into
+complete observations.
 
 Apply [Eurostat reuse terms](https://ec.europa.eu/eurostat/help/copyright-notice).
 Attribute the dataset and access date, identify transformations and state that

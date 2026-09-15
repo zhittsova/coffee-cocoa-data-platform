@@ -14,3 +14,94 @@ models:
         data_tests: [not_null]
       - name: source_capture_id
         data_tests: [not_null]
+  - name: stg_trade_observations
+    description: Eurostat trade cells with governed product, partner, flow and unit semantics.
+    columns:
+      - name: frequency_code
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [M]
+      - name: reporter_code
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [DE]
+      - name: partner_code
+        data_tests: [not_null]
+      - name: partner_class
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [named, special, aggregate]
+      - name: product_code
+        data_tests: [not_null]
+      - name: product_group
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - coffee_unroasted
+                  - coffee_roasted
+                  - coffee_extracts
+                  - coffee_preparations
+                  - cocoa_beans
+                  - cocoa_paste
+                  - cocoa_butter
+                  - cocoa_powder_unsweetened
+                  - cocoa_powder_sweetened
+                  - chocolate_cocoa_preparations
+      - name: classification_code
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [CN]
+      - name: classification_year
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+      - name: comparability_segment
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['2017-2021', '2022-2026', no identified CN8 leaf break]
+      - name: flow_code
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['1', '2']
+      - name: indicator_code
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [VALUE_IN_EUROS, QUANTITY_IN_100KG]
+      - name: source_unit
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, 100kg]
+      - name: normalized_unit
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, kg]
+      - name: period_month
+        data_tests: [not_null]
+      - name: source_capture_id
+        data_tests: [not_null]
+      - name: source_update_time
+        data_tests: [not_null]
+      - name: status_available
+        data_tests: [not_null]

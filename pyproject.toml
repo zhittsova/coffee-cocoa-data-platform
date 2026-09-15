@@ -5,7 +5,7 @@ build-backend = "uv_build"
 [project]
 name = "coffee-cocoa-platform"
 version = "0.0.0"
-description = "Local coffee and cocoa data platform foundation"
+description = "Local coffee and cocoa data platform"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [

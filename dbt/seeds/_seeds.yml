@@ -1,0 +1,14 @@
+version: 2
+
+seeds:
+  - name: trade_product_groups
+    description: Disjoint supported CN8 leaves and their inspected annual validity.
+    columns:
+      - name: product_code
+        data_tests: [not_null, unique]
+      - name: product_group
+        data_tests: [not_null]
+      - name: valid_from_year
+        data_tests: [not_null]
+      - name: valid_to_year
+        data_tests: [not_null]
