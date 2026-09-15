@@ -61,7 +61,7 @@ def monthly_prices(context: AssetExecutionContext) -> MaterializeResult:
     )
 
 
-@dbt_assets(manifest=MANIFEST, project=DBT_PROJECT)
+@dbt_assets(manifest=MANIFEST, project=DBT_PROJECT, select="+stg_benchmark_prices+")
 def benchmark_dbt(context: AssetExecutionContext, dbt: DbtCliResource):
     yield from dbt.cli(["build"], context=context).stream()
 

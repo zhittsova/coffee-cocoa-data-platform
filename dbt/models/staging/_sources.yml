@@ -15,3 +15,27 @@ sources:
             data_tests: [not_null]
           - name: period_month
             data_tests: [not_null]
+  - name: eurostat_trade
+    description: Eurostat Comext DS-045409 monthly German trade cells in source units.
+    tables:
+      - name: monthly_trade
+        description: Represented source cells at partner, CN8 product, flow, indicator and month grain.
+        config:
+          external_location: "{{ env_var('COFFEE_COCOA_HOME', '.') }}/data/parquet/trade_observations.parquet"
+        columns:
+          - name: source_dataset
+            data_tests: [not_null]
+          - name: frequency_code
+            data_tests: [not_null]
+          - name: reporter_code
+            data_tests: [not_null]
+          - name: partner_code
+            data_tests: [not_null]
+          - name: product_code
+            data_tests: [not_null]
+          - name: flow_code
+            data_tests: [not_null]
+          - name: indicator_code
+            data_tests: [not_null]
+          - name: period_month
+            data_tests: [not_null]

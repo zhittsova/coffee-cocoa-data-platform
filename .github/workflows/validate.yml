@@ -56,7 +56,7 @@ jobs:
           uv run --locked pytest -q -m "not integration"
           uv run --locked python -c "import coffee_cocoa_platform, dagster, dagster_dbt, dbt, duckdb; print('Core imports passed')"
           uv build
-      - name: Run offline price pipeline
+      - name: Run offline source pipelines
         env:
           DAGSTER_DISABLE_TELEMETRY: "1"
         run: uv run --locked pytest -q -m integration

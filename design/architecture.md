@@ -1,7 +1,8 @@
 # Architecture
 
-Status: the World Bank price path is implemented locally. Trade, forecasting,
-read snapshots, recovery and deployment controls below remain planned.
+Status: the World Bank price path and bounded Eurostat trade staging path are
+implemented locally. Trade marts, forecasting, read snapshots, recovery and
+deployment controls below remain planned.
 
 ## Responsibilities
 
@@ -18,9 +19,11 @@ read snapshots, recovery and deployment controls below remain planned.
 ## Data flow
 
 Retain original source captures and their request/checksum manifests. Parse them
-into validated observations with source codes, units, missingness and provenance.
-dbt builds standardized models, then marts and forecast datasets. Publish a
-consistent read snapshot only after the required checks pass.
+into validated observations with source codes, missingness and provenance. The
+trade capture completes a fixed set of year/product slices before replacing the
+current Parquet file. dbt assigns product groups, partner classes, units and the
+documented CN comparability segment. Later models build marts and forecast
+datasets. Publish a consistent read snapshot only after the required checks pass.
 
 These boundaries correspond to raw, standardized and business layers, often
 called bronze, silver and gold. They do not require three physical copies of
