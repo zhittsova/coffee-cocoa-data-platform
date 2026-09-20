@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: int_trade_observations_pivoted
+    description: Value and quantity indicators paired at the source coordinate without filling absent cells.
+    config:
+      meta:
+        owner: data-platform
+        grain: one row per source, reporter, partner, CN8 leaf, flow and reference month
+    columns:
+      - name: source_dataset
+        description: Eurostat dataset identifier.
+      - name: frequency_code
+        description: Monthly source frequency.
+      - name: reporter_code
+        description: Reporting geography code.
+      - name: partner_code
+        description: Publisher partner category code.
+      - name: partner_label
+        description: Publisher partner label.
+      - name: partner_class
+        description: Named, special or aggregate partner class.
+      - name: is_partner_detail
+        description: False for aggregate areas.
+      - name: product_code
+        description: CN8 leaf code.
+      - name: product_group
+        description: Disjoint product group.
+      - name: classification_code
+        description: Combined Nomenclature identifier.
+      - name: classification_year
+        description: Applicable CN year.
+      - name: comparability_segment
+        description: Segment around the known 18069090 scope break.
+      - name: flow_code
+        description: One for imports and two for exports.
+      - name: flow_name
+        description: Imports or exports.
+      - name: period_month
+        description: First day of the reference month.
+      - name: source_capture_id
+        description: Validated response checksum.
+      - name: source_update_time
+        description: Dataset response update timestamp.
+      - name: value_cell_present
+        description: Whether the value coordinate is represented.
+      - name: trade_value_eur
+        description: Numeric statistical border value in EUR.
+      - name: value_status
+        description: Nullable publisher status for the value cell.
+      - name: value_status_available
+        description: Whether value status metadata is available.
+      - name: quantity_cell_present
+        description: Whether the mass coordinate is represented.
+      - name: net_mass_kg
+        description: Numeric net mass in kilograms.
+      - name: quantity_status
+        description: Nullable publisher status for the mass cell.
+      - name: quantity_status_available
+        description: Whether mass status metadata is available.
+      - name: has_numeric_value
+        description: Whether value is numeric.
+      - name: has_numeric_mass
+        description: Whether mass is numeric.
+      - name: has_paired_measures
+        description: Whether value and mass are numeric for the same coordinate.
+      - name: unit_value_eur_per_kg
+        description: Value divided by positive paired mass.
+      - name: value_basis
+        description: CIF for imports and FOB for exports.

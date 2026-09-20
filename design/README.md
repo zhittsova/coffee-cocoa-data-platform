@@ -1,8 +1,8 @@
 # Coffee & Cocoa Data Platform
 
-Design status: the benchmark price and bounded trade staging paths run locally.
-Trade marts, forecasts and later operational controls remain planned. See
-[data contracts](data-contracts.md) for the bounded source scope.
+Design status: the benchmark price, bounded trade staging and dbt domain models
+run locally. Forecasts and later operational controls remain planned. See [data
+contracts](data-contracts.md) for the bounded source scope.
 
 Build a local data platform for coffee and cocoa prices and trade, with dbt at
 the center of the transformation layer. Dagster coordinates ingestion, data
@@ -49,6 +49,7 @@ support verification; generated code or tests alone do not establish correctness
 - [First feature: local foundation](features/001-local-foundation.md)
 - [Benchmark price pipeline](features/002-benchmark-price-pipeline.md)
 - [Trade ingestion pipeline](features/003-trade-ingestion-pipeline.md)
+- [dbt domain model](features/004-dbt-domain-models.md)
 
 Offline fixtures are the confirmed default. The first forecast targets monthly
 cocoa USD/kg at one- and three-month horizons. Freeze its evaluation splits and

@@ -3,6 +3,10 @@ version: 2
 models:
   - name: stg_benchmark_prices
     description: Validated monthly benchmark observations at source, series and reference-month grain.
+    config:
+      meta:
+        owner: data-platform
+        grain: one row per source dataset, benchmark series and reference month
     columns:
       - name: series_id
         data_tests:
@@ -16,6 +20,10 @@ models:
         data_tests: [not_null]
   - name: stg_trade_observations
     description: Eurostat trade cells with governed product, partner, flow and unit semantics.
+    config:
+      meta:
+        owner: data-platform
+        grain: one row per source, reporter, partner, CN8 leaf, flow, indicator and month
     columns:
       - name: frequency_code
         data_tests:

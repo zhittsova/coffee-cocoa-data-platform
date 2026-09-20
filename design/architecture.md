@@ -1,7 +1,7 @@
 # Architecture
 
-Status: the World Bank price path and bounded Eurostat trade staging path are
-implemented locally. Trade marts, forecasting, read snapshots, recovery and
+Status: the World Bank price path, bounded Eurostat trade staging path and dbt
+domain models are implemented locally. Forecasting, read snapshots, recovery and
 deployment controls below remain planned.
 
 ## Responsibilities
@@ -22,18 +22,21 @@ Retain original source captures and their request/checksum manifests. Parse them
 into validated observations with source codes, missingness and provenance. The
 trade capture completes a fixed set of year/product slices before replacing the
 current Parquet file. dbt assigns product groups, partner classes, units and the
-documented CN comparability segment. Later models build marts and forecast
-datasets. Publish a consistent read snapshot only after the required checks pass.
+documented CN comparability segment. It publishes conformed dimensions, separate
+benchmark and trade facts, and monthly metrics with explicit coverage. Later
+models build forecast datasets. Publish a consistent read snapshot only after
+the required checks pass.
 
 These boundaries correspond to raw, standardized and business layers, often
 called bronze, silver and gold. They do not require three physical copies of
 every table. Choose materializations for their purpose; avoid empty pass-through
 models and partition sizes smaller than the workload justifies.
 
-Keep source-level facts at declared grains. Product dimensions carry classification
-and validity periods. Geography dimensions distinguish countries, regions and
-totals. Price benchmarks remain separate from trade unit values. Import/export
-balances compare compatible coverage and retain their valuation differences.
+Keep source-level facts at declared grains. Product dimensions carry annual
+classification validity. Partner dimensions distinguish named geographies,
+special categories and aggregates. Price benchmarks remain separate from trade
+unit values. Import/export balances compare identical observed CN8 coverage and
+retain their CIF/FOB valuation difference.
 
 The catalog starts with dbt and Dagster metadata: purpose, owner, grain, columns,
 units, source attribution, lineage, availability and quality results. Add another

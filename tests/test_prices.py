@@ -167,8 +167,10 @@ def test_definitions_import_does_not_download_or_materialize(tmp_path):
             (
                 "from coffee_cocoa_platform.price_assets import defs; "
                 "g=defs.resolve_asset_graph(); "
-                "assert len(g.get_all_asset_keys()) == 3; "
+                "assert len(g.get_all_asset_keys()) == 5; "
                 "assert any(str(k) == \"AssetKey(['world_bank_prices', 'monthly_prices'])\" "
+                "for k in g.get_all_asset_keys()); "
+                "assert any(str(k) == \"AssetKey(['monthly_benchmark_dynamics'])\" "
                 "for k in g.get_all_asset_keys())"
             ),
         ],

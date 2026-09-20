@@ -22,6 +22,12 @@ then runs the related dbt models and tests in `warehouse/coffee_cocoa.duckdb`.
 The trade fixture spans the 2021/2022 CN boundary and keeps sparse cells, source
 status, partner totals and special partners distinct.
 
+dbt publishes separate benchmark and trade facts, conformed calendar, commodity,
+product and partner dimensions, and monthly analytical models. Trade models
+declare their observed CN8 and partner coverage before calculating unit values,
+product mix, balances, shares or concentration. `metric_dictionary` exposes each
+governed metric's expression, unit, denominator and coverage from model metadata.
+
 To fetch the World Bank workbook explicitly, choose an inclusive range:
 
 ```sh
@@ -52,7 +58,7 @@ checksum-verified captures. Real trade captures stay local under Eurostat's
 [reuse policy](https://ec.europa.eu/eurostat/help/copyright-notice).
 
 Read the [project design](design/README.md) for the architecture and data
-contracts.
+contracts, including the [dbt domain model](design/features/004-dbt-domain-models.md).
 
 Pull requests run the locked local checks, package smoke test and conventional
 title check. Main requires those checks, a PR and signed commits; it rejects force

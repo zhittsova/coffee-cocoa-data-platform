@@ -1,0 +1,143 @@
+version: 2
+
+unit_tests:
+  - name: pivot_trade_measures_without_zero_mass_unit_value
+    description: A reported zero mass stays numeric but cannot produce a unit value.
+    model: int_trade_observations_pivoted
+    given:
+      - input: ref('stg_trade_observations')
+        format: dict
+        rows:
+          - source_dataset: eurostat_comext_ds_045409
+            frequency_code: M
+            reporter_code: DE
+            partner_code: QS
+            partner_label: Stores and provisions
+            partner_class: special
+            is_partner_detail: true
+            product_code: '09011100'
+            product_group: coffee_unroasted
+            classification_code: CN
+            classification_year: 2021
+            comparability_segment: no identified CN8 leaf break
+            flow_code: '2'
+            flow_name: exports
+            indicator_code: VALUE_IN_EUROS
+            source_value: 200
+            normalized_value: 200
+            source_status:
+            status_available: true
+            period_month: '2021-12-01'
+            source_capture_id: fixture
+            source_update_time: '2026-08-14 09:00:00+00:00'
+          - source_dataset: eurostat_comext_ds_045409
+            frequency_code: M
+            reporter_code: DE
+            partner_code: QS
+            partner_label: Stores and provisions
+            partner_class: special
+            is_partner_detail: true
+            product_code: '09011100'
+            product_group: coffee_unroasted
+            classification_code: CN
+            classification_year: 2021
+            comparability_segment: no identified CN8 leaf break
+            flow_code: '2'
+            flow_name: exports
+            indicator_code: QUANTITY_IN_100KG
+            source_value: 0
+            normalized_value: 0
+            source_status:
+            status_available: true
+            period_month: '2021-12-01'
+            source_capture_id: fixture
+            source_update_time: '2026-08-14 09:00:00+00:00'
+    expect:
+      format: dict
+      rows:
+        - partner_code: QS
+          trade_value_eur: 200
+          net_mass_kg: 0
+          has_paired_measures: true
+          unit_value_eur_per_kg:
+          value_basis: FOB
+
+  - name: publish_balance_only_for_matching_leaf_sets
+    description: Matching flow coverage produces a balance while an absent export stays null.
+    model: monthly_trade_balances
+    given:
+      - input: ref('fct_trade_observations')
+        format: dict
+        rows:
+          - source_dataset: eurostat_comext_ds_045409
+            reporter_code: DE
+            month_key: '2021-12-01'
+            classification_year: 2021
+            product_group: coffee_unroasted
+            flow_code: '1'
+            product_code: '09011100'
+            partner_code: WORLD
+            has_numeric_value: true
+            trade_value_eur: 1300
+          - source_dataset: eurostat_comext_ds_045409
+            reporter_code: DE
+            month_key: '2021-12-01'
+            classification_year: 2021
+            product_group: coffee_unroasted
+            flow_code: '2'
+            product_code: '09011100'
+            partner_code: WORLD
+            has_numeric_value: true
+            trade_value_eur: 250
+          - source_dataset: eurostat_comext_ds_045409
+            reporter_code: DE
+            month_key: '2022-01-01'
+            classification_year: 2022
+            product_group: coffee_unroasted
+            flow_code: '1'
+            product_code: '09011100'
+            partner_code: WORLD
+            has_numeric_value: true
+            trade_value_eur: 1400
+    expect:
+      format: dict
+      rows:
+        - month_key: '2021-12-01'
+          product_group: coffee_unroasted
+          has_compatible_flow_coverage: true
+          trade_balance_eur: -1050
+        - month_key: '2022-01-01'
+          product_group: coffee_unroasted
+          has_compatible_flow_coverage: false
+          trade_balance_eur:
+
+  - name: suppress_named_share_for_zero_denominator
+    description: An explicit numeric zero is not sparse absence and does not support a share.
+    model: monthly_partner_shares
+    given:
+      - input: ref('fct_trade_observations')
+        format: dict
+        rows:
+          - source_dataset: eurostat_comext_ds_045409
+            reporter_code: DE
+            month_key: '2022-01-01'
+            classification_year: 2022
+            product_group: coffee_unroasted
+            flow_code: '1'
+            flow_name: imports
+            value_basis: CIF
+            trade_partner_key: eurostat_comext_ds_045409:DE:BR
+            partner_code: BR
+            partner_label: Brazil
+            partner_class: named
+            product_code: '09011100'
+            has_numeric_value: true
+            trade_value_eur: 0
+    expect:
+      format: dict
+      rows:
+        - partner_code: BR
+          partner_value_eur: 0
+          named_partner_denominator_eur: 0
+          named_partner_value_share:
+          has_positive_named_denominator: false
