@@ -7,6 +7,7 @@ from dagster import (
     AssetExecutionContext,
     AssetKey,
     Definitions,
+    Field,
     MaterializeResult,
     asset,
 )
@@ -23,20 +24,33 @@ DBT_PROJECT = DbtProject(project_dir=DBT_DIR, profiles_dir=DBT_DIR)
 
 @asset(
     key=AssetKey(["eurostat_trade", "monthly_trade"]),
-    config_schema={"mode": str, "profile": str, "start": str, "end": str},
+    config_schema={
+        "mode": str,
+        "profile": str,
+        "start": str,
+        "end": str,
+        "capture_vintage": Field(str, default_value="initial"),
+    },
     description="Complete a bounded Eurostat plan and publish typed trade Parquet.",
 )
 def monthly_trade(context: AssetExecutionContext) -> MaterializeResult:
     config = context.op_config
     paths = ProjectPaths.from_root()
+    paths.require_capture_root()
     if config["mode"] == "fixture":
         profile = fixture_profile()
         manifest = publish_trade_profile(
-            profile, paths, fixture_transport, fixture=True
+            profile,
+            paths,
+            fixture_transport,
+            fixture=True,
+            capture_vintage=config["capture_vintage"],
         )
     elif config["mode"] == "live":
         profile = make_profile(config["profile"], config["start"], config["end"])
-        manifest = publish_trade_profile(profile, paths)
+        manifest = publish_trade_profile(
+            profile, paths, capture_vintage=config["capture_vintage"]
+        )
     else:
         raise ValueError("mode must be fixture or live")
     return MaterializeResult(
@@ -68,6 +82,7 @@ def run_trade_assets(
     start: str | None,
     end: str | None,
     root: Path,
+    capture_vintage: str = "initial",
 ) -> bool:
     """Run the Eurostat source and its dbt seed/staging dependencies."""
     from dagster import materialize
@@ -93,6 +108,7 @@ def run_trade_assets(
                         "profile": profile_name,
                         "start": start,
                         "end": end,
+                        "capture_vintage": capture_vintage,
                     }
                 }
             }

@@ -60,6 +60,12 @@ checksum-verified captures. Real trade captures stay local under Eurostat's
 Read the [project design](design/README.md) for the architecture and data
 contracts, including the [dbt domain model](design/features/004-dbt-domain-models.md).
 
+For revised observations and bounded backfills, use the manual
+[source replacement job](design/features/005-source-revisions.md). It selects
+retained captures, replaces complete declared scopes, and publishes a candidate
+warehouse only after dbt models and tests pass. Use a new `--capture-vintage` label
+on the trade command when fetching a new revision of an existing request plan.
+
 Pull requests run the locked local checks, package smoke test and conventional
 title check. Main requires those checks, a PR and signed commits; it rejects force
 pushes and deletion. There is no required self-approval for the solo maintainer.

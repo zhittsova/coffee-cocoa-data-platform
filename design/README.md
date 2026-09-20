@@ -1,7 +1,7 @@
 # Coffee & Cocoa Data Platform
 
-Design status: the benchmark price, bounded trade staging and dbt domain models
-run locally. Forecasts and later operational controls remain planned. See [data
+Design status: benchmark prices, bounded trade staging, dbt domain models and
+source replacements run locally. Forecasts and later operational controls remain planned. See [data
 contracts](data-contracts.md) for the bounded source scope.
 
 Build a local data platform for coffee and cocoa prices and trade, with dbt at

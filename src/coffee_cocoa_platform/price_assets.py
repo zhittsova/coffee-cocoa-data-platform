@@ -30,6 +30,7 @@ DBT_PROJECT = DbtProject(project_dir=DBT_DIR, profiles_dir=DBT_DIR)
 def monthly_prices(context: AssetExecutionContext) -> MaterializeResult:
     config = context.op_config
     paths = ProjectPaths.from_root()
+    paths.require_capture_root()
     if config["mode"] == "fixture":
         data = synthetic_workbook()
         effective_url = "synthetic://world-bank-monthly-price-fixture-v1"

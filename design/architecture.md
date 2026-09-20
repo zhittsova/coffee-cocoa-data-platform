@@ -1,8 +1,8 @@
 # Architecture
 
-Status: the World Bank price path, bounded Eurostat trade staging path and dbt
-domain models are implemented locally. Forecasting, read snapshots, recovery and
-deployment controls below remain planned.
+Status: the World Bank price path, bounded Eurostat trade staging path, dbt
+domain models and bounded source replacements are implemented locally.
+Forecasting, read snapshots, recovery and deployment controls below remain planned.
 
 ## Responsibilities
 
@@ -60,6 +60,12 @@ Prepare each capture in isolation. A failed download or validation cannot replac
 the last valid publication. Keep immutable capture identity separate from the
 current observation key so revised records do not accumulate as duplicate facts.
 Bound backfills and retain a manifest of complete slices.
+
+The [replacement job](features/005-source-revisions.md) validates explicit source
+versions in a candidate warehouse. Incremental staging deletes the declared scope,
+including withdrawn keys, before inserting its selected observations. Downstream
+models and tests finish before one atomic warehouse replacement publishes the
+business tables and selected-source history together.
 
 Coordinate every supported warehouse writer. Notebooks read a published immutable
 snapshot, avoiding concurrent access to the mutable DuckDB file. Retention must

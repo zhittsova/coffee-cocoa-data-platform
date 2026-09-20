@@ -4,7 +4,8 @@ Status: source contract version 2, inspected on 2026-09-14. The benchmark adapte
 monthly benchmark result, bounded trade adapter and trade staging model are
 implemented. The supported trade scope is Germany, 33 annual CN8 leaves and both
 flows from January 2017 through the latest observed periods below. A complete
-trade history download and analytical trade marts are not implemented.
+trade history download remains pending. Analytical trade marts and bounded
+source-version replacements are implemented.
 
 ## Benchmarks
 
@@ -39,7 +40,7 @@ missingness, schema version and source descriptions. Original workbook bytes
 remain under `data/raw/` by checksum. The fixture uses the same adapter with
 synthetic source values and a synthetic URI.
 
-dbt reads the Parquet source, exposes a staging view and builds
+dbt reads the Parquet source, materializes incremental staging and builds
 `monthly_benchmark_prices` in DuckDB. Its change columns compare only adjacent
 observed reference months; missing prices or a skipped month yield null changes.
 Dagster links the workbook asset to both dbt models. Importing its definitions

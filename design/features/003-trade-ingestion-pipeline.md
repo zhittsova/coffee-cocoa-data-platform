@@ -29,6 +29,6 @@ mapping seed and staging model. The combined fixture command runs this path and
 the benchmark pipeline in one local graph.
 
 Analytical totals, balances and concentration are defined in the separate
-[dbt domain model](004-dbt-domain-models.md). Revision handling and full-history
-acceptance remain later features. Real captures and derived local data are not
-published.
+[dbt domain model](004-dbt-domain-models.md). Bounded revision handling is defined
+in [source replacements](005-source-revisions.md); full-history acceptance remains
+pending. Real captures and derived local data are not published.
