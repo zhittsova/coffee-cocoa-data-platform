@@ -12,9 +12,11 @@ from coffee_cocoa_platform.price_assets import (
     benchmark_dbt,
     monthly_prices,
 )
+from coffee_cocoa_platform.revision_job import source_replacement_job
 from coffee_cocoa_platform.trade_assets import monthly_trade, trade_dbt
 
 defs = Definitions(
+    jobs=[source_replacement_job],
     assets=[monthly_prices, monthly_trade, benchmark_dbt, trade_dbt],
     resources={"dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR)},
 )

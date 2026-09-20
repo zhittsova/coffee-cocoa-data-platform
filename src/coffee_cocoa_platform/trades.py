@@ -332,6 +332,10 @@ def parse_trade_response(data: bytes, request: TradeSlice) -> tuple[pa.Table, di
         raise TradeSourceError("Trade response must be a JSON object")
     if document.get("class") != "dataset" or document.get("version") != "2.0":
         raise TradeSourceError("Unsupported JSON-stat response")
+    if not isinstance(document.get("value"), (Mapping, list)):
+        raise TradeSourceError(
+            "Missing explicit value collection; not authoritative empty"
+        )
     if tuple(document.get("id", ())) != DIMENSIONS:
         raise TradeSourceError("Unexpected JSON-stat dimensions")
     size = document.get("size")
@@ -663,11 +667,16 @@ def publish_trade_profile(
     transport: Transport = fetch_trade_slice,
     *,
     fixture: bool = False,
+    capture_vintage: str = "initial",
 ) -> dict:
     """Resume verified slices and replace current Parquet only after full validation."""
     if not profile.slices:
         raise TradeSourceError("Trade profile has no slices")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", capture_vintage):
+        raise TradeSourceError("Invalid capture vintage")
     plan = json.loads(json.dumps(_plan_payload(profile)))
+    if capture_vintage != "initial":
+        plan["capture_vintage"] = capture_vintage
     plan_bytes = json.dumps(plan, sort_keys=True, separators=(",", ":")).encode()
     plan_hash = hashlib.sha256(plan_bytes).hexdigest()
     state = paths.state / "trade" / plan_hash
@@ -805,6 +814,7 @@ def publish_trade_profile(
             "dataset": DATASET,
             "fixture": fixture,
             "plan_hash": plan_hash,
+            "capture_vintage": capture_vintage,
             "profile": profile.name,
             "row_count": table.num_rows,
             "reserved_payload_bytes": profile.reserved_payload_bytes,

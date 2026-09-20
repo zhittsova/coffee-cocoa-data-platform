@@ -14,6 +14,13 @@ class ProjectPaths:
     warehouse: Path
     state: Path
 
+    def require_capture_root(self) -> None:
+        """Keep standalone source commands out of replacement-managed roots."""
+        if (self.state / "replacements").exists():
+            raise ValueError(
+                "Use a separate capture root; this root is managed by source replacements"
+            )
+
     @classmethod
     def from_root(cls, root: Path | None = None) -> "ProjectPaths":
         """Resolve paths from an explicit root, COFFEE_COCOA_HOME, or cwd."""

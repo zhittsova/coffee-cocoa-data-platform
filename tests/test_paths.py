@@ -19,3 +19,13 @@ def test_environment_root_is_used_from_another_working_directory(tmp_path, monke
     monkeypatch.chdir(tmp_path)
 
     assert ProjectPaths.from_root().root == tmp_path / "project"
+
+
+def test_capture_assets_cannot_reuse_replacement_root(tmp_path):
+    import pytest
+
+    paths = ProjectPaths.from_root(tmp_path)
+    paths.require_capture_root()
+    (paths.state / "replacements").mkdir(parents=True)
+    with pytest.raises(ValueError, match="separate capture root"):
+        paths.require_capture_root()

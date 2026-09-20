@@ -15,6 +15,11 @@ def main() -> None:
     parser.add_argument("--start", help="Inclusive YYYY-MM reference month")
     parser.add_argument("--end", help="Inclusive YYYY-MM reference month")
     parser.add_argument("--root", type=Path, default=None)
+    parser.add_argument(
+        "--capture-vintage",
+        default="initial",
+        help="New label fetches a fresh bounded capture; repeat a label to resume",
+    )
     args = parser.parse_args()
     if args.mode == "live" and (args.start is None or args.end is None):
         parser.error("Live mode requires explicit --start and --end")
@@ -28,6 +33,7 @@ def main() -> None:
         start=args.start,
         end=args.end,
         root=root,
+        capture_vintage=args.capture_vintage,
     ):
         raise SystemExit(1)
     manifest = json.loads((root / "data/parquet/trade_observations.json").read_text())

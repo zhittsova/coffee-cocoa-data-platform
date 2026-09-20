@@ -1,3 +1,6 @@
+{{ config(materialized='incremental', incremental_strategy='delete+insert',
+    on_schema_change='fail', pre_hook="{{ delete_replacement_scope('trade') }}") }}
+
 with source_data as (
     select * from {{ source('eurostat_trade', 'monthly_trade') }}
 ),
@@ -65,3 +68,7 @@ left join product_mapping
         source_data.product_code = product_mapping.product_code
         and source_data.classification_year
         between product_mapping.valid_from_year and product_mapping.valid_to_year
+
+{% if is_incremental() %}
+where {{ replacement_predicate('trade', 'source_data') }}
+{% endif %}
