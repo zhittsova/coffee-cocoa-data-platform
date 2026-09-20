@@ -51,7 +51,7 @@ def monthly_trade(context: AssetExecutionContext) -> MaterializeResult:
     )
 
 
-@dbt_assets(manifest=MANIFEST, project=DBT_PROJECT, select="+stg_trade_observations")
+@dbt_assets(manifest=MANIFEST, project=DBT_PROJECT, select="+stg_trade_observations+")
 def trade_dbt(context: AssetExecutionContext, dbt: DbtCliResource):
     yield from dbt.cli(["build"], context=context).stream()
 

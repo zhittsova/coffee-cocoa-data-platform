@@ -1,0 +1,119 @@
+version: 2
+
+models:
+  - name: dim_commodity
+    description: The two commodity domains used to conform benchmark and trade facts without equating benchmark series to CN8 products.
+    config:
+      meta:
+        owner: data-platform
+        grain: one row per commodity
+    columns:
+      - name: commodity_key
+        description: Stable coffee or cocoa key.
+        data_tests: [not_null, unique]
+      - name: commodity_name
+        description: Display name for the commodity.
+        data_tests: [not_null]
+
+  - name: dim_calendar_month
+    description: Monthly calendar from the benchmark start through the contracted trade end bound.
+    config:
+      meta:
+        owner: data-platform
+        grain: one row per reference month
+    columns:
+      - name: month_key
+        description: First day of the reference month.
+        data_tests: [not_null, unique]
+      - name: calendar_year
+        description: Four-digit calendar year.
+        data_tests: [not_null]
+      - name: calendar_quarter
+        description: Calendar quarter number from one through four.
+        data_tests: [not_null]
+      - name: calendar_month
+        description: Calendar month number from one through twelve.
+        data_tests: [not_null]
+      - name: month_label
+        description: Reference month formatted as YYYY-MM.
+        data_tests: [not_null, unique]
+
+  - name: dim_trade_product
+    description: Supported CN8 leaves expanded to each valid classification year; headings never enter this additive set.
+    config:
+      meta:
+        owner: data-platform
+        grain: one row per CN8 leaf and classification year
+    columns:
+      - name: trade_product_key
+        description: Stable product and classification-year key.
+        data_tests: [not_null, unique]
+      - name: product_code
+        description: Eight-character CN leaf code retained as text.
+        data_tests: [not_null]
+      - name: classification_year
+        description: Calendar year whose Combined Nomenclature applies.
+        data_tests: [not_null]
+      - name: classification_code
+        description: Combined Nomenclature identifier, always CN.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [CN]
+      - name: product_group
+        description: Disjoint analytical group for the CN8 leaf.
+        data_tests: [not_null]
+      - name: commodity_key
+        description: Coffee or cocoa conformed commodity key.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_commodity')
+                field: commodity_key
+      - name: has_2022_scope_break
+        description: True only for 18069090, whose source scope changes in 2022.
+        data_tests: [not_null]
+      - name: comparability_segment
+        description: Safe within-leaf comparison segment around the known 2022 scope break.
+        data_tests: [not_null]
+
+  - name: dim_trade_partner
+    description: Observed Eurostat partner categories classified as named, special or aggregate.
+    config:
+      meta:
+        owner: data-platform
+        grain: one row per source dataset, reporter and partner code
+    columns:
+      - name: trade_partner_key
+        description: Stable source, reporter and partner key.
+        data_tests: [not_null, unique]
+      - name: source_dataset
+        description: Source dataset identifier.
+        data_tests: [not_null]
+      - name: reporter_code
+        description: Reporting geography code, currently DE.
+        data_tests: [not_null]
+      - name: partner_code
+        description: Publisher partner category code.
+        data_tests: [not_null]
+      - name: partner_label
+        description: Publisher label observed for the partner code.
+        data_tests: [not_null]
+      - name: partner_class
+        description: Named geography, special category or aggregate area.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [named, special, aggregate]
+      - name: is_partner_detail
+        description: False for aggregate areas and true for named and special categories.
+        data_tests: [not_null]
+      - name: label_count
+        description: Distinct observed labels for the key; values other than one fail the model contract.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1]

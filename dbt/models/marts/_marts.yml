@@ -3,12 +3,26 @@ version: 2
 models:
   - name: monthly_benchmark_prices
     description: Nominal USD/kg prices and adjacent observed-month changes, without filling missing months.
+    config:
+      meta:
+        owner: data-platform
+        grain: one row per source dataset, benchmark series and reference month
     columns:
       - name: source_dataset
+        description: World Bank source dataset identifier.
         data_tests: [not_null]
       - name: series_id
+        description: Selected benchmark series identifier.
         data_tests: [not_null]
       - name: period_month
+        description: First day of the reference month.
         data_tests: [not_null]
+      - name: price_usd_per_kg
+        description: Nominal benchmark price in USD per kilogram.
       - name: source_capture_id
+        description: SHA-256 identity of the validated source capture.
         data_tests: [not_null]
+      - name: change_usd_per_kg
+        description: Difference from the prior calendar month's usable price.
+      - name: change_percent
+        description: Percentage change from the prior calendar month's usable positive price.

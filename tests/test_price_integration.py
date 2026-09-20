@@ -27,7 +27,7 @@ def test_fixture_pipeline_and_repeat_are_stable(tmp_path):
             env=environment,
             capture_output=True,
             text=True,
-            timeout=180,
+            timeout=360,
             check=False,
         )
         assert result.returncode == 0, result.stdout + result.stderr
