@@ -20,6 +20,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from coffee_cocoa_platform.paths import ProjectPaths
+from coffee_cocoa_platform.runtime import coordinated_capture
+from coffee_cocoa_platform.transport import retryable
 
 SOURCE_URL = (
     "https://ec.europa.eu/eurostat/api/comext/dissemination/statistics/1.0/"
@@ -661,6 +663,7 @@ def combine_trade_tables(tables: list[pa.Table]) -> pa.Table:
     return combined
 
 
+@coordinated_capture
 def publish_trade_profile(
     profile: TradeProfile,
     paths: ProjectPaths,
@@ -692,7 +695,8 @@ def publish_trade_profile(
     for request in profile.slices:
         attempts = _read_attempts(state)
         accepted = _accepted_slice(state, request, attempts)
-        if accepted is None:
+        while accepted is None:
+            attempts = _read_attempts(state)
             slice_attempts = [
                 attempt
                 for attempt in attempts
@@ -748,6 +752,12 @@ def publish_trade_profile(
                         **failed,
                     },
                 )
+                if (
+                    retryable(exc)
+                    and len(slice_attempts) + 1 < profile.max_slice_attempts
+                ):
+                    time.sleep(0.25)
+                    continue
                 raise TradeSourceError(
                     f"Slice {request.slice_id} failed; run the same plan to continue"
                 ) from exc

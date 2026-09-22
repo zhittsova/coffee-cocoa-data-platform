@@ -43,8 +43,8 @@ synthetic source values and a synthetic URI.
 dbt reads the Parquet source, materializes incremental staging and builds
 `monthly_benchmark_prices` in DuckDB. Its change columns compare only adjacent
 observed reference months; missing prices or a skipped month yield null changes.
-Dagster links the workbook asset to both dbt models. Importing its definitions
-reads the checked-in dbt manifest but does not fetch or materialize data.
+Dagster links the workbook asset to its dbt descendants. Importing definitions
+parses the project into an isolated manifest without fetching or materializing data.
 
 The [dataset terms](https://www.worldbank.org/ext/en/legal/terms-conditions/datasets)
 include additional conditions and exceptions for third-party data. Keep World
@@ -187,8 +187,9 @@ Keep the existing smoke limits: 2 MiB per response, 10 MiB per batch, at most
 15-second connection limit and a 60-second response deadline. The full profile
 has an explicit 64 MiB cumulative payload ceiling, at most 150 trade attempts
 and 30 active download minutes across five checkpointed batches. At most three
-attempts may address one slice; the audit recipe stops on failure and requires
-an explicit continuation. These are engineering caps, not publisher quotas.
+attempts may address one slice. Runtime controls retry transient transport errors
+within those budgets; validation failures stop without automatic retries. These are
+engineering caps, not publisher quotas.
 
 Measured responses: all 33 leaves for January-August 2026 used 546,401 bytes;
 January 2017 used 103,662 bytes; a dense eight-leaf, twelve-month 2024 sample
@@ -214,8 +215,8 @@ checksums for the identical plan. Publication requires every planned slice, one
 known 278-code partner universe for full slices, exact requested dimensions,
 unique natural keys and one reported source update timestamp. The manifest records
 per-series latest value, quantity and paired months. The full trade budget reserves
-the benchmark adapter's 2 MiB response ceiling, so both sources remain within the
-64 MiB profile cap. These transport checks do not turn sparse source coverage into
+the benchmark adapter's cumulative 2 MiB attempt allowance, so both sources remain
+within the 64 MiB profile cap. These transport checks do not turn sparse source coverage into
 complete observations.
 
 Apply [Eurostat reuse terms](https://ec.europa.eu/eurostat/help/copyright-notice).

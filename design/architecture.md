@@ -1,7 +1,7 @@
 # Architecture
 
 Status: the World Bank price path, bounded Eurostat trade staging path, dbt
-domain models and bounded source replacements are implemented locally.
+domain models, bounded source replacements and shared writer controls run locally.
 Forecasting, read snapshots, recovery and deployment controls below remain planned.
 
 ## Responsibilities
@@ -67,8 +67,10 @@ including withdrawn keys, before inserting its selected observations. Downstream
 models and tests finish before one atomic warehouse replacement publishes the
 business tables and selected-source history together.
 
-Coordinate every supported warehouse writer. Notebooks read a published immutable
-snapshot, avoiding concurrent access to the mutable DuckDB file. Retention must
+The [local runtime protocol](features/007-runtime-controls.md) coordinates every
+supported warehouse writer and guards direct dbt access. Published immutable read
+snapshots for notebooks remain planned. Until then, read-only consumers must also
+hold the root lock for the lifetime of their connection. Retention must
 preserve inputs needed to reproduce published results and active readers.
 
 ## Forecasting boundary

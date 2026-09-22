@@ -3,14 +3,12 @@
 import argparse
 import hashlib
 import json
-import os
-import subprocess
-import sys
 from pathlib import Path
 
 import duckdb
 
 from coffee_cocoa_platform.catalog_metadata import DBT_DIR
+from coffee_cocoa_platform.runtime import run_dbt, writer_lock
 
 REQUIRED_META = (
     "owner",
@@ -331,17 +329,23 @@ def main() -> None:
     parser.add_argument(
         "--root", type=Path, required=True, help="Selected local pipeline root"
     )
-    parser.add_argument("--target-dir", type=Path, default=DBT_DIR / "target")
+    parser.add_argument("--target-dir", type=Path, default=None)
     parser.add_argument("--check-only", action="store_true")
     args = parser.parse_args()
     root = args.root.resolve()
+    target = (args.target_dir or root / ".state/catalog").resolve()
+    with writer_lock(root), writer_lock(target):
+        args.target_dir = target
+        generate_catalog(args, parser, root)
+
+
+def generate_catalog(args, parser, root):
     target = args.target_dir.resolve()
     warehouse = root / "warehouse" / "coffee_cocoa.duckdb"
     if not warehouse.is_file():
         parser.error(f"Selected warehouse does not exist: {warehouse}")
     if not args.check_only:
         command = [
-            str(Path(sys.executable).with_name("dbt")),
             "docs",
             "generate",
             "--project-dir",
@@ -352,12 +356,9 @@ def main() -> None:
             str(target),
             "--no-partial-parse",
         ]
-        environment = dict(
-            os.environ,
-            COFFEE_COCOA_HOME=str(root),
-            COFFEE_COCOA_DUCKDB_PATH=str(warehouse),
-        )
-        subprocess.run(command, env=environment, check=True)
+        result = run_dbt(root, [*command, "--log-path", str(target)])
+        if result.returncode:
+            raise RuntimeError(result.stdout + result.stderr)
     manifest = json.loads((target / "manifest.json").read_text())
     catalog = json.loads((target / "catalog.json").read_text())
     if not args.check_only:

@@ -4,12 +4,16 @@ import os
 from pathlib import Path
 
 from dagster import (
+    AssetCheckResult,
+    AssetCheckSpec,
     AssetExecutionContext,
     AssetKey,
     Definitions,
     Field,
     MaterializeResult,
+    MetadataValue,
     asset,
+    in_process_executor,
 )
 from dagster_dbt import DbtCliResource, dbt_assets
 
@@ -23,11 +27,25 @@ from coffee_cocoa_platform.catalog_metadata import (
     source_asset_owners,
 )
 from coffee_cocoa_platform.paths import ProjectPaths
+from coffee_cocoa_platform.refresh import refresh_status
+from coffee_cocoa_platform.runtime import (
+    coordinated_run,
+    local_writer,
+    require_in_process,
+    run_instance,
+    stream_dbt,
+)
 from coffee_cocoa_platform.trade_fixture import fixture_profile, fixture_transport
 from coffee_cocoa_platform.trades import make_profile, publish_trade_profile
 
 
 @asset(
+    required_resource_keys={"writer"},
+    check_specs=[
+        AssetCheckSpec(
+            "source_validated", asset=AssetKey(["eurostat_trade", "monthly_trade"])
+        )
+    ],
     key=AssetKey(["eurostat_trade", "monthly_trade"]),
     config_schema={
         "mode": str,
@@ -40,7 +58,17 @@ from coffee_cocoa_platform.trades import make_profile, publish_trade_profile
     owners=source_asset_owners("eurostat_trade", "monthly_trade"),
     metadata=source_asset_metadata("eurostat_trade", "monthly_trade"),
 )
-def monthly_trade(context: AssetExecutionContext) -> MaterializeResult:
+def monthly_trade(context: AssetExecutionContext):
+    try:
+        result = _capture(context)
+    except Exception:
+        yield AssetCheckResult(passed=False, check_name="source_validated")
+        raise
+    yield result
+
+
+def _capture(context):
+    require_in_process(context)
     config = context.op_config
     paths = ProjectPaths.from_root()
     paths.require_capture_root()
@@ -61,7 +89,9 @@ def monthly_trade(context: AssetExecutionContext) -> MaterializeResult:
     else:
         raise ValueError("mode must be fixture or live")
     return MaterializeResult(
+        check_results=[AssetCheckResult(passed=True, check_name="source_validated")],
         metadata={
+            "refresh_status": MetadataValue.json(refresh_status(manifest)),
             "profile": manifest["profile"],
             "row_count": manifest["row_count"],
             "slice_count": manifest["slice_count"],
@@ -74,26 +104,32 @@ def monthly_trade(context: AssetExecutionContext) -> MaterializeResult:
             "source_capture_ids": [
                 item["capture"]["sha256"] for item in manifest["slices"]
             ],
-        }
+        },
     )
 
 
 @dbt_assets(
+    required_resource_keys={"writer"},
     manifest=ensure_manifest(),
     project=DBT_PROJECT,
     select="+stg_trade_observations+",
     dagster_dbt_translator=GovernedDbtTranslator(),
 )
-def trade_dbt(context: AssetExecutionContext, dbt: DbtCliResource):
-    yield from dbt.cli(["build"], context=context).stream()
+def trade_dbt(context: AssetExecutionContext):
+    yield from stream_dbt(context, "+stg_trade_observations+")
 
 
 defs = Definitions(
+    executor=in_process_executor,
     assets=[monthly_trade, trade_dbt],
-    resources={"dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR)},
+    resources={
+        "dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR),
+        "writer": local_writer,
+    },
 )
 
 
+@coordinated_run
 def run_trade_assets(
     mode: str,
     profile_name: str,
@@ -111,25 +147,29 @@ def run_trade_assets(
         raise ValueError("Live trade assets require explicit start and end months")
     os.environ["COFFEE_COCOA_HOME"] = str(root.resolve())
     paths = ProjectPaths.from_root(root)
-    paths.warehouse.mkdir(parents=True, exist_ok=True)
     os.environ["COFFEE_COCOA_DUCKDB_PATH"] = str(
         paths.warehouse / "coffee_cocoa.duckdb"
     )
-    result = materialize(
-        [monthly_trade, trade_dbt],
-        resources={"dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR)},
-        run_config={
-            "ops": {
-                "eurostat_trade__monthly_trade": {
-                    "config": {
-                        "mode": mode,
-                        "profile": profile_name,
-                        "start": start,
-                        "end": end,
-                        "capture_vintage": capture_vintage,
+    with run_instance(root) as instance:
+        result = materialize(
+            instance=instance,
+            assets=[monthly_trade, trade_dbt],
+            resources={
+                "dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR),
+                "writer": local_writer,
+            },
+            run_config={
+                "ops": {
+                    "eurostat_trade__monthly_trade": {
+                        "config": {
+                            "mode": mode,
+                            "profile": profile_name,
+                            "start": start,
+                            "end": end,
+                            "capture_vintage": capture_vintage,
+                        }
                     }
                 }
-            }
-        },
-    )
+            },
+        )
     return result.success

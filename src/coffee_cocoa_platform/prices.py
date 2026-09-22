@@ -19,6 +19,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from coffee_cocoa_platform.paths import ProjectPaths
+from coffee_cocoa_platform.runtime import coordinated_capture
+from coffee_cocoa_platform.transport import retryable
 
 SOURCE_URL = (
     "https://thedocs.worldbank.org/en/doc/"
@@ -265,28 +267,55 @@ def parse_workbook(
     return table, {"source_update_text": update_text, **coverage}
 
 
-def fetch_workbook(url: str = SOURCE_URL) -> tuple[bytes, str, datetime, str | None]:
-    """Make one bounded explicit live request."""
-    started = time.monotonic()
+def _fetch_workbook(url: str, budget: dict) -> tuple[bytes, str, datetime, str | None]:
+    """Consume a shared byte/time allowance across transport attempts."""
     retrieved = datetime.now(UTC)
     request = urllib.request.Request(
         url, headers={"User-Agent": "coffee-cocoa-platform/0.0.0"}
     )
-    with urllib.request.urlopen(request, timeout=15) as response:
+    timeout = min(15, max(0.1, budget["deadline"] - time.monotonic()))
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         if response.status != 200:
             raise PriceSourceError(f"HTTP {response.status}")
         effective_url = response.geturl()
         content_type = response.headers.get("Content-Type")
         chunks = []
-        size = 0
-        while chunk := response.read(65536):
-            size += len(chunk)
-            if size > MAX_BYTES or time.monotonic() - started > 60:
-                raise PriceSourceError("Live download exceeded byte or time limit")
+        while True:
+            try:
+                chunk = response.read(min(65536, budget["remaining_bytes"] + 1))
+            except Exception as exc:
+                partial = getattr(exc, "partial", b"")
+                if isinstance(partial, bytes):
+                    budget["remaining_bytes"] -= len(partial)
+                raise
+            budget["remaining_bytes"] -= len(chunk)
+            if budget["remaining_bytes"] < 0 or time.monotonic() > budget["deadline"]:
+                raise PriceSourceError(
+                    "Live download exceeded cumulative byte or time limit"
+                )
+            if not chunk:
+                break
             chunks.append(chunk)
     return b"".join(chunks), effective_url, retrieved, content_type
 
 
+def fetch_workbook(url: str = SOURCE_URL):
+    """At most three attempts within one 2 MiB/60-second allowance."""
+    budget = {"remaining_bytes": MAX_BYTES, "deadline": time.monotonic() + 60}
+    for attempt in range(3):
+        if budget["remaining_bytes"] <= 0 or time.monotonic() >= budget["deadline"]:
+            raise PriceSourceError(
+                "Live download exhausted cumulative byte or time limit"
+            )
+        try:
+            return _fetch_workbook(url, budget)
+        except Exception as exc:
+            if not retryable(exc) or attempt == 2:
+                raise
+            time.sleep(0.25 * (attempt + 1))
+
+
+@coordinated_capture
 def publish_workbook(
     data: bytes,
     *,

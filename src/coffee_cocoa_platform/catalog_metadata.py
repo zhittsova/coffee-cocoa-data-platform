@@ -1,7 +1,9 @@
 """Project-owned metadata shared by dbt docs and Dagster assets."""
 
+import os
 import subprocess
 import sys
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 
@@ -11,13 +13,13 @@ from dagster_dbt import DagsterDbtTranslator, DbtProject
 
 DBT_DIR = Path(__file__).resolve().parents[2] / "dbt"
 DBT_PROJECT = DbtProject(project_dir=DBT_DIR, profiles_dir=DBT_DIR)
-MANIFEST = DBT_DIR / "target" / "manifest.json"
 SOURCE_DEFINITIONS = DBT_DIR / "models" / "staging" / "_sources.yml"
 
 
 @lru_cache(maxsize=1)
 def ensure_manifest() -> Path:
     """Parse current versioned definitions before Dagster loads the asset graph."""
+    target = Path(tempfile.mkdtemp(prefix="coffee-cocoa-definitions-"))
     command = [
         str(Path(sys.executable).with_name("dbt")),
         "parse",
@@ -26,9 +28,20 @@ def ensure_manifest() -> Path:
         "--profiles-dir",
         str(DBT_DIR),
         "--no-partial-parse",
+        "--target-path",
+        str(target),
+        "--log-path",
+        str(target),
     ]
-    subprocess.run(command, check=True, capture_output=True, text=True)
-    return MANIFEST
+    subprocess.run(
+        command,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env=dict(os.environ, DBT_SEND_ANONYMOUS_USAGE_STATS="false"),
+    )
+    return target / "manifest.json"
 
 
 def source_table_definition(source_name: str, table_name: str) -> dict:
