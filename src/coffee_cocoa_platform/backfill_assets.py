@@ -73,6 +73,7 @@ def selected_warehouse(context):
             "selected_sources": list(request.keys() - {"schema_version"}),
             "replacement_run_id": result["run_id"],
             "warehouse": result["warehouse"],
+            "snapshot_id": result["snapshot"]["snapshot_id"],
             "dbt_build_log": str(Path(result["evidence"]) / "dbt-build.log"),
             "dependency_policy": "all dbt descendants rebuild from the complete selected union",
         },

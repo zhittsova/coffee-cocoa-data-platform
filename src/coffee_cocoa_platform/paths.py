@@ -12,6 +12,7 @@ class ProjectPaths:
     raw: Path
     parquet: Path
     warehouse: Path
+    snapshots: Path
     state: Path
 
     def require_capture_root(self) -> None:
@@ -33,5 +34,6 @@ class ProjectPaths:
             raw=data / "raw",
             parquet=data / "parquet",
             warehouse=base / "warehouse",
+            snapshots=base / "snapshots",
             state=base / ".state",
         )

@@ -1,8 +1,9 @@
 # Architecture
 
 Status: the World Bank price path, bounded Eurostat trade staging path, dbt
-domain models, bounded source replacements and shared writer controls run locally.
-Forecasting, read snapshots, recovery and deployment controls below remain planned.
+domain models, bounded source replacements, shared writer controls and immutable
+read snapshots run locally. Forecasting, recovery and deployment controls below
+remain planned.
 
 ## Responsibilities
 
@@ -68,10 +69,12 @@ models and tests finish before one atomic warehouse replacement publishes the
 business tables and selected-source history together.
 
 The [local runtime protocol](features/007-runtime-controls.md) coordinates every
-supported warehouse writer and guards direct dbt access. Published immutable read
-snapshots for notebooks remain planned. Until then, read-only consumers must also
-hold the root lock for the lifetime of their connection. Retention must
-preserve inputs needed to reproduce published results and active readers.
+supported warehouse writer and guards direct dbt access. The
+[read snapshot protocol](features/008-read-snapshots.md) checkpoints the tested
+warehouse under that lock, verifies an immutable copy and publishes a small
+pointer atomically. Supported readers use only the immutable copy and hold a
+lease for their connection lifetime. Retention preserves the current version,
+two prior successful versions and any older version still leased by a reader.
 
 ## Forecasting boundary
 

@@ -15,6 +15,7 @@ dist/
 # Local captures, warehouse and tool output
 data/
 warehouse/
+snapshots/
 .state/
 target/
 dbt/manifest.json
