@@ -23,9 +23,9 @@ REQUIRED_META = (
     "origin_url",
     "license_url",
 )
-SOURCE_FILES = {
-    "monthly_prices": ("benchmark_prices.parquet", "_selected_prices"),
-    "monthly_trade": ("trade_observations.parquet", "_selected_trade"),
+SELECTED_SOURCE_TABLES = {
+    "monthly_prices": "_selected_prices",
+    "monthly_trade": "_selected_trade",
 }
 
 
@@ -69,6 +69,10 @@ def definition_errors(manifest: dict) -> list[str]:
             and not node["config"]["contract"]["enforced"]
         ):
             errors.append(f"{name}: model contract is not enforced")
+        if node["resource_type"] == "source" and not node["config"].get(
+            "external_location"
+        ):
+            errors.append(f"{name}: missing Parquet location")
     return errors
 
 
@@ -101,8 +105,11 @@ def metadata_errors(manifest: dict, catalog: dict, root: Path) -> list[str]:
                     (column.get("data_type") or "").lower().replace(" ", "")
                 )
             if node["resource_type"] == "source":
-                filename, selected_table = SOURCE_FILES[name]
-                parquet = root / "data" / "parquet" / filename
+                selected_table = SELECTED_SOURCE_TABLES[name]
+                parquet = Path(node["config"].get("external_location") or "")
+                if not parquet.resolve().is_relative_to(root):
+                    errors.append(f"{name}: source location is outside selected root")
+                    continue
                 if parquet.is_file():
                     actual = _schema(
                         connection, "select * from read_parquet(?)", [str(parquet)]
@@ -163,8 +170,10 @@ def add_external_source_columns(manifest: dict, catalog: dict, root: Path) -> No
     with duckdb.connect(str(warehouse), read_only=True) as connection:
         relations = {row[0] for row in connection.execute("show tables").fetchall()}
         for unique_id, node in manifest["sources"].items():
-            filename, selected_table = SOURCE_FILES[node["name"]]
-            parquet = root / "data" / "parquet" / filename
+            selected_table = SELECTED_SOURCE_TABLES[node["name"]]
+            parquet = Path(node["config"].get("external_location") or "")
+            if not parquet.resolve().is_relative_to(root):
+                continue
             if parquet.is_file():
                 physical = _schema(
                     connection, "select * from read_parquet(?)", [str(parquet)]
