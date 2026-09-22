@@ -1,41 +1,185 @@
 version: 2
-
 sources:
-  - name: world_bank_prices
-    description: World Bank Commodity Price Data monthly workbook, selected benchmark cells in USD/kg.
-    tables:
-      - name: monthly_prices
-        description: One selected series and reference month per captured workbook.
-        config:
-          external_location: "{{ env_var('COFFEE_COCOA_HOME', '.') }}/data/parquet/benchmark_prices.parquet"
-        columns:
-          - name: source_dataset
-            data_tests: [not_null]
-          - name: series_id
-            data_tests: [not_null]
-          - name: period_month
-            data_tests: [not_null]
-  - name: eurostat_trade
-    description: Eurostat Comext DS-045409 monthly German trade cells in source units.
-    tables:
-      - name: monthly_trade
-        description: Represented source cells at partner, CN8 product, flow, indicator and month grain.
-        config:
-          external_location: "{{ env_var('COFFEE_COCOA_HOME', '.') }}/data/parquet/trade_observations.parquet"
-        columns:
-          - name: source_dataset
-            data_tests: [not_null]
-          - name: frequency_code
-            data_tests: [not_null]
-          - name: reporter_code
-            data_tests: [not_null]
-          - name: partner_code
-            data_tests: [not_null]
-          - name: product_code
-            data_tests: [not_null]
-          - name: flow_code
-            data_tests: [not_null]
-          - name: indicator_code
-            data_tests: [not_null]
-          - name: period_month
-            data_tests: [not_null]
+- name: world_bank_prices
+  description: World Bank Commodity Price Data monthly workbook, selected benchmark cells in USD/kg.
+  tables:
+  - name: monthly_prices
+    description: Validated monthly benchmark prices from a captured World Bank workbook, at series and reference-month grain.
+    config:
+      external_location: '{{ env_var(''COFFEE_COCOA_HOME'', ''.'') }}/data/parquet/benchmark_prices.parquet'
+      meta:
+        owner: data-platform
+        grain: one row per source dataset, benchmark series and reference month
+        origin: World Bank monthly Commodity Price Data workbook
+        license: World Bank dataset terms; third-party conditions apply and real-observation redistribution is unresolved
+        classification: local source capture; real source bytes stay local
+        refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+          freshness SLA
+        provenance: data/parquet/benchmark_prices.json; source_capture_id is raw workbook SHA-256; replacement runs use _revision_state
+          and .state/capture_manifests/<manifest_id>.json
+        license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+        origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+    columns:
+    - name: source_dataset
+      data_tests:
+      - not_null
+      description: Publisher dataset identifier.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: series_id
+      data_tests:
+      - not_null
+      description: World Bank benchmark series identifier.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: period_month
+      data_tests:
+      - not_null
+      description: First day of the source reference month.
+      data_type: date
+      meta:
+        unit: calendar date
+    - name: source_value_text
+      description: Original source cell text before numeric normalization.
+      data_type: varchar
+      meta:
+        unit: USD/kg text or unavailable marker
+    - name: price_usd_per_kg
+      description: Nominal monthly benchmark price in USD per kilogram; null represents an unavailable cell.
+      data_type: decimal(20,8)
+      meta:
+        unit: USD/kg
+    - name: source_capture_id
+      description: SHA-256 identity of the raw source capture; resolve it in the local capture manifest.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: source_status
+      description: Workbook cell status when available; null means the workbook did not provide status metadata.
+      data_type: varchar
+      meta:
+        unit: none
+- name: eurostat_trade
+  description: Eurostat Comext DS-045409 monthly German trade cells in source units.
+  tables:
+  - name: monthly_trade
+    description: Validated Eurostat trade cells in typed Parquet, at partner, CN8 leaf, flow, indicator and reference-month grain.
+    config:
+      external_location: '{{ env_var(''COFFEE_COCOA_HOME'', ''.'') }}/data/parquet/trade_observations.parquet'
+      meta:
+        owner: data-platform
+        grain: one represented source cell per dataset, reporter, partner, CN8 leaf, flow, indicator and month
+        origin: Eurostat Comext DS-045409 monthly trade responses and annual CN mapping
+        license: Eurostat reuse terms; attribute Eurostat and access date, identify transformations; Eurostat is not responsible
+          for derived calculations
+        classification: local source capture; real source bytes stay local
+        refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+          freshness SLA
+        provenance: data/parquet/trade_observations.json; source_capture_id resolves to slices[].capture.sha256; replacement
+          runs use _revision_state and .state/capture_manifests/<manifest_id>.json
+        license_url: https://ec.europa.eu/eurostat/help/copyright-notice
+        origin_url: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/DS-045409
+    columns:
+    - name: source_dataset
+      data_tests:
+      - not_null
+      description: Publisher dataset identifier.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: frequency_code
+      data_tests:
+      - not_null
+      description: Publisher frequency code, monthly M.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: reporter_code
+      data_tests:
+      - not_null
+      description: Eurostat reporting geography code, currently DE.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: partner_code
+      data_tests:
+      - not_null
+      description: Publisher partner category code; named, special and aggregate classes remain separate.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: partner_label
+      description: Publisher label for the partner category.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: product_code
+      data_tests:
+      - not_null
+      description: Eight-character CN leaf code retained as text.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: flow_code
+      data_tests:
+      - not_null
+      description: 'Eurostat flow code: 1 import, 2 export.'
+      data_type: varchar
+      meta:
+        unit: none
+    - name: indicator_code
+      data_tests:
+      - not_null
+      description: Eurostat indicator code for value or quantity.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: period_month
+      data_tests:
+      - not_null
+      description: First day of the source reference month.
+      data_type: date
+      meta:
+        unit: calendar date
+    - name: source_value_text
+      description: Original source cell text before numeric normalization.
+      data_type: varchar
+      meta:
+        unit: indicator-dependent; see indicator_code and source_unit
+    - name: source_value
+      description: Parsed source numeric value in the source indicator unit; null denotes an unavailable cell.
+      data_type: decimal(24,4)
+      meta:
+        unit: indicator-dependent; see indicator_code and source_unit
+    - name: source_status
+      description: Nullable publisher cell status; absence does not imply a numeric zero.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: status_available
+      description: Whether publisher status metadata was supplied for this response.
+      data_type: boolean
+      meta:
+        unit: none
+    - name: classification_code
+      description: Combined Nomenclature classification identifier, CN.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: classification_year
+      description: Annual CN classification valid for the reference month.
+      data_type: smallint
+      meta:
+        unit: calendar year
+    - name: source_capture_id
+      description: SHA-256 identity of the raw source capture; resolve it in the local capture manifest.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: source_update_time
+      description: Publisher dataset update timestamp, not a per-cell release date.
+      data_type: varchar
+      meta:
+        unit: publisher timestamp text

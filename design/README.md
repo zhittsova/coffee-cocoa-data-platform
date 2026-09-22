@@ -50,6 +50,7 @@ support verification; generated code or tests alone do not establish correctness
 - [Benchmark price pipeline](features/002-benchmark-price-pipeline.md)
 - [Trade ingestion pipeline](features/003-trade-ingestion-pipeline.md)
 - [dbt domain model](features/004-dbt-domain-models.md)
+- [Local metadata catalog](features/006-governance-catalog.md)
 
 Offline fixtures are the confirmed default. The first forecast targets monthly
 cocoa USD/kg at one- and three-month horizons. Freeze its evaluation splits and

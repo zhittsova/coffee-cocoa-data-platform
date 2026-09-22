@@ -1,389 +1,852 @@
 version: 2
-
 models:
-  - name: monthly_benchmark_dynamics
-    description: Separate benchmark-series levels, adjacent-month changes and within-series indexes in nominal USD per kilogram.
-    config:
-      meta:
-        owner: data-platform
-        grain: one row per source dataset, benchmark series and reference month
-        metrics:
-          - name: benchmark_monthly_change_percent
-            expression: change_percent
-            unit: percent
-            denominator: prior calendar month's usable positive price for the same series
-            coverage: adjacent represented months within one benchmark series
-          - name: benchmark_index
-            expression: benchmark_index
-            unit: index, first usable observation equals 100
-            denominator: first usable price in the captured series
-            coverage: one World Bank series; no coffee-variety or CN8 identity is inferred
-    columns:
-      - name: benchmark_price_key
-        description: Stable source, series and month fact key.
-        data_tests: [not_null, unique]
-      - name: source_dataset
-        description: World Bank source dataset identifier.
-        data_tests: [not_null]
-      - name: commodity_key
-        description: Coffee or cocoa domain without CN8 identity.
-        data_tests: [not_null]
-      - name: benchmark_series
-        description: Source benchmark series identifier.
-        data_tests: [not_null]
-      - name: month_key
-        description: First day of the reference month.
-        data_tests: [not_null]
-      - name: price_usd_per_kg
-        description: Nominal benchmark price in USD per kilogram.
-      - name: change_usd_per_kg
-        description: Difference from the prior calendar month's usable price.
-      - name: change_percent
-        description: Percentage change from the prior calendar month's usable positive price.
+- name: monthly_benchmark_dynamics
+  description: Separate benchmark-series levels, adjacent-month changes and within-series indexes in nominal USD per kilogram.
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per source dataset, benchmark series and reference month
+      metrics:
+      - name: benchmark_monthly_change_percent
+        expression: change_percent
+        unit: percent
+        denominator: prior calendar month's usable positive price for the same series
+        coverage: adjacent represented months within one benchmark series
       - name: benchmark_index
-        description: Within-series index relative to the first usable captured observation.
-      - name: currency_code
-        description: ISO currency code, always USD.
-        data_tests: [not_null]
-      - name: mass_unit
-        description: Price denominator unit, always kg.
-        data_tests: [not_null]
-      - name: is_trade_product_identity
-        description: Always false because benchmark series are not CN8 product identities.
-        data_tests:
-          - accepted_values:
-              arguments:
-                values: [false]
-      - name: source_capture_id
-        description: SHA-256 identity of the validated source capture.
-        data_tests: [not_null]
-
-  - name: monthly_trade_product_metrics
-    description: WORLD-only product-group totals, observed-universe mix and paired-measure unit values with explicit leaf coverage.
-    config:
-      meta:
-        owner: data-platform
-        grain: one row per source, reporter, month, product group and flow
-        metrics:
-          - name: observed_trade_unit_value_eur_per_kg
-            expression: observed_unit_value_eur_per_kg
-            unit: EUR per kg
-            denominator: positive net mass for the same paired value and mass leaf cells
-            coverage: WORLD rows for observed paired CN8 leaves; not a retail price or margin
-          - name: observed_product_value_share
-            expression: observed_product_value_share
-            unit: ratio
-            denominator: WORLD value across observed selected CN8 leaves in the same month and flow
-            coverage: observed annual selected-leaf universe; completeness columns disclose missing leaves
-    columns:
-      - name: source_dataset
-        description: Eurostat dataset identifier.
-        data_tests: [not_null]
-      - name: reporter_code
-        description: Reporting geography code.
-        data_tests: [not_null]
-      - name: month_key
-        description: First day of the reference month.
-        data_tests: [not_null]
-      - name: classification_year
-        description: Calendar year whose CN classification applies.
-        data_tests: [not_null]
-      - name: product_group
-        description: Disjoint analytical product group.
-        data_tests: [not_null]
-      - name: flow_code
-        description: One for imports and two for exports.
-        data_tests: [not_null]
-      - name: flow_name
-        description: Imports or exports.
-        data_tests: [not_null]
-      - name: value_basis
-        description: CIF for imports and FOB for exports.
-        data_tests: [not_null]
-      - name: represented_value_product_count
-        description: Leaves with represented value cells, including status-only cells.
-        data_tests: [not_null]
-      - name: observed_value_product_count
-        description: Leaves with numeric value cells.
-        data_tests: [not_null]
-      - name: represented_mass_product_count
-        description: Leaves with represented mass cells, including status-only cells.
-        data_tests: [not_null]
-      - name: observed_mass_product_count
-        description: Leaves with numeric mass cells.
-        data_tests: [not_null]
-      - name: paired_product_count
-        description: Leaves with numeric value and positive numeric mass cells.
-        data_tests: [not_null]
-      - name: world_value_eur
-        description: Sum of numeric WORLD values in EUR for observed leaves.
-      - name: world_net_mass_kg
-        description: Sum of numeric WORLD net mass in kilograms for observed leaves.
-      - name: paired_value_eur
-        description: Value numerator restricted to leaves with positive paired mass.
-      - name: paired_net_mass_kg
-        description: Positive mass denominator from the same paired leaves as paired_value_eur.
-      - name: expected_product_count
-        description: Declared leaf count for the product group and classification year.
-        data_tests: [not_null]
-      - name: contains_2022_scope_break
-        description: True when the group includes 18069090.
-        data_tests: [not_null]
-      - name: universe_expected_product_count
-        description: Declared annual selected-leaf count, always 33 for supported years.
-        data_tests: [not_null]
-      - name: has_complete_value_coverage
-        description: Whether every declared group leaf has a numeric value.
-        data_tests: [not_null]
-      - name: has_complete_mass_coverage
-        description: Whether every declared group leaf has numeric mass.
-        data_tests: [not_null]
-      - name: has_complete_paired_coverage
-        description: Whether every declared group leaf has value and positive mass.
-        data_tests: [not_null]
-      - name: observed_product_mix_denominator_eur
-        description: WORLD value denominator across observed product groups for the month and flow.
-      - name: universe_observed_value_product_count
-        description: Selected leaves with numeric WORLD values in the month and flow.
-        data_tests: [not_null]
-      - name: declared_universe_expected_product_count
-        description: All 33 annual selected leaves, including wholly absent groups.
-        data_tests: [not_null]
-      - name: observed_unit_value_eur_per_kg
-        description: Paired value divided by positive mass over the same observed leaves.
+        expression: benchmark_index
+        unit: index, first usable observation equals 100
+        denominator: first usable price in the captured series
+        coverage: one World Bank series; no coffee-variety or CN8 identity is inferred
+      origin: World Bank monthly Commodity Price Data workbook
+      license: World Bank dataset terms; third-party conditions apply and real-observation redistribution is unresolved
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+        freshness SLA
+      provenance: data/parquet/benchmark_prices.json; replacement runs use _revision_state and .state/capture_manifests/<manifest_id>.json
+      license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+      origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+    contract:
+      enforced: true
+  columns:
+  - name: benchmark_price_key
+    description: Stable source, series and month fact key.
+    data_tests:
+    - not_null
+    - unique
+    data_type: varchar
+    meta:
+      unit: none
+  - name: source_dataset
+    description: World Bank source dataset identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: commodity_key
+    description: Coffee or cocoa domain without CN8 identity.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: benchmark_series
+    description: Source benchmark series identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: month_key
+    description: First day of the reference month.
+    data_tests:
+    - not_null
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: price_usd_per_kg
+    description: Nominal benchmark price in USD per kilogram.
+    data_type: decimal(20,8)
+    meta:
+      unit: USD/kg
+  - name: change_usd_per_kg
+    description: Difference from the prior calendar month's usable price.
+    data_type: decimal(21,8)
+    meta:
+      unit: USD/kg
+  - name: change_percent
+    description: Percentage change from the prior calendar month's usable positive price.
+    data_type: double
+    meta:
+      unit: percent
+  - name: currency_code
+    description: ISO currency code, always USD.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: unit label
+  - name: mass_unit
+    description: Price denominator unit, always kg.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: unit label
+  - name: is_trade_product_identity
+    description: Always false because benchmark series are not CN8 product identities.
+    data_tests:
+    - accepted_values:
+        arguments:
+          values:
+          - false
+    data_type: boolean
+    meta:
+      unit: none
+  - name: source_capture_id
+    description: SHA-256 identity of the validated source capture.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: benchmark_index
+    description: Within-series index relative to the first usable captured observation.
+    data_type: double
+    meta:
+      unit: index, first usable observation = 100
+- name: monthly_trade_product_metrics
+  description: WORLD-only product-group totals, observed-universe mix and paired-measure unit values with explicit leaf coverage.
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per source, reporter, month, product group and flow
+      metrics:
+      - name: observed_trade_unit_value_eur_per_kg
+        expression: observed_unit_value_eur_per_kg
+        unit: EUR per kg
+        denominator: positive net mass for the same paired value and mass leaf cells
+        coverage: WORLD rows for observed paired CN8 leaves; not a retail price or margin
       - name: observed_product_value_share
-        description: Product-group WORLD value divided by the observed selected-leaf denominator.
-      - name: has_complete_product_mix_universe
-        description: Whether numeric WORLD values cover all 33 annual selected leaves.
-        data_tests: [not_null]
-      - name: coverage_basis
-        description: Human-readable scope used for product metrics.
-        data_tests: [not_null]
-
-  - name: monthly_trade_balances
-    description: WORLD value imports and exports with a balance only when both flows cover the identical CN8 leaf set.
-    config:
-      meta:
-        owner: data-platform
-        grain: one row per source, reporter, month and product group
-        metrics:
-          - name: trade_balance_eur
-            expression: trade_balance_eur
-            unit: EUR
-            denominator: none; export FOB value minus import CIF value
-            coverage: WORLD values with identical observed CN8 leaf sets in both flows; not profit or margin
-    columns:
-      - name: source_dataset
-        description: Eurostat dataset identifier.
-        data_tests: [not_null]
-      - name: reporter_code
-        description: Reporting geography code.
-        data_tests: [not_null]
-      - name: month_key
-        description: First day of the reference month.
-        data_tests: [not_null]
-      - name: classification_year
-        description: Calendar year whose CN classification applies.
-        data_tests: [not_null]
-      - name: product_group
-        description: Disjoint analytical product group.
-        data_tests: [not_null]
-      - name: import_value_cif_eur
-        description: Observed WORLD import value on a CIF basis.
-      - name: export_value_fob_eur
-        description: Observed WORLD export value on a FOB basis.
-      - name: import_product_count
-        description: Import leaves with numeric WORLD values.
-      - name: export_product_count
-        description: Export leaves with numeric WORLD values.
-      - name: import_product_coverage
-        description: Sorted CN8 leaf signature for observed import values.
-      - name: export_product_coverage
-        description: Sorted CN8 leaf signature for observed export values.
-      - name: has_compatible_flow_coverage
-        description: Whether import and export value leaf signatures match and are represented.
-        data_tests: [not_null]
+        expression: observed_product_value_share
+        unit: ratio
+        denominator: WORLD value across observed selected CN8 leaves in the same month and flow
+        coverage: observed annual selected-leaf universe; completeness columns disclose missing leaves
+      origin: Eurostat Comext DS-045409 monthly trade responses and annual CN mapping
+      license: Eurostat reuse terms; attribute Eurostat and access date, identify transformations; Eurostat is not responsible
+        for derived calculations
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+        freshness SLA
+      provenance: data/parquet/trade_observations.json; replacement runs use _revision_state and .state/capture_manifests/<manifest_id>.json
+      license_url: https://ec.europa.eu/eurostat/help/copyright-notice
+      origin_url: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/DS-045409
+    contract:
+      enforced: true
+  columns:
+  - name: source_dataset
+    description: Eurostat dataset identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: reporter_code
+    description: Reporting geography code.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: month_key
+    description: First day of the reference month.
+    data_tests:
+    - not_null
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: classification_year
+    description: Calendar year whose CN classification applies.
+    data_tests:
+    - not_null
+    data_type: smallint
+    meta:
+      unit: calendar year
+  - name: product_group
+    description: Disjoint analytical product group.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: flow_code
+    description: One for imports and two for exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: flow_name
+    description: Imports or exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: value_basis
+    description: CIF for imports and FOB for exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: represented_value_product_count
+    description: Leaves with represented value cells, including status-only cells.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: observed_value_product_count
+    description: Leaves with numeric value cells.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: represented_mass_product_count
+    description: Leaves with represented mass cells, including status-only cells.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: observed_mass_product_count
+    description: Leaves with numeric mass cells.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: paired_product_count
+    description: Leaves with numeric value and positive numeric mass cells.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: world_value_eur
+    description: Sum of numeric WORLD values in EUR for observed leaves.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: world_net_mass_kg
+    description: Sum of numeric WORLD net mass in kilograms for observed leaves.
+    data_type: decimal(38,4)
+    meta:
+      unit: kg
+  - name: paired_value_eur
+    description: Value numerator restricted to leaves with positive paired mass.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: paired_net_mass_kg
+    description: Positive mass denominator from the same paired leaves as paired_value_eur.
+    data_type: decimal(38,4)
+    meta:
+      unit: kg
+  - name: expected_product_count
+    description: Declared leaf count for the product group and classification year.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: contains_2022_scope_break
+    description: True when the group includes 18069090.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: universe_expected_product_count
+    description: Declared annual selected-leaf count, always 33 for supported years.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: has_complete_value_coverage
+    description: Whether every declared group leaf has a numeric value.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: has_complete_mass_coverage
+    description: Whether every declared group leaf has numeric mass.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: has_complete_paired_coverage
+    description: Whether every declared group leaf has value and positive mass.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: observed_product_mix_denominator_eur
+    description: WORLD value denominator across observed product groups for the month and flow.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: universe_observed_value_product_count
+    description: Selected leaves with numeric WORLD values in the month and flow.
+    data_tests:
+    - not_null
+    data_type: hugeint
+    meta:
+      unit: count
+  - name: declared_universe_expected_product_count
+    description: All 33 annual selected leaves, including wholly absent groups.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: coverage_basis
+    description: Human-readable scope used for product metrics.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: observed_unit_value_eur_per_kg
+    description: Paired value divided by positive mass over the same observed leaves.
+    data_type: double
+    meta:
+      unit: EUR/kg
+  - name: observed_product_value_share
+    description: Product-group WORLD value divided by the observed selected-leaf denominator.
+    data_type: double
+    meta:
+      unit: ratio
+  - name: has_complete_product_mix_universe
+    description: Whether numeric WORLD values cover all 33 annual selected leaves.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+- name: monthly_trade_balances
+  description: WORLD value imports and exports with a balance only when both flows cover the identical CN8 leaf set.
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per source, reporter, month and product group
+      metrics:
       - name: trade_balance_eur
-        description: Export FOB value minus import CIF value when flow coverage matches.
-      - name: coverage_basis
-        description: Human-readable coverage gate for the balance.
-        data_tests: [not_null]
-
-  - name: monthly_partner_shares
-    description: Named-partner value shares over the observed named-partner denominator; aggregate and special codes are excluded.
-    config:
-      meta:
-        owner: data-platform
-        grain: one row per source, reporter, month, product group, flow and named partner
-        metrics:
-          - name: named_partner_value_share
-            expression: named_partner_value_share
-            unit: ratio
-            denominator: observed numeric value across named partners only
-            coverage: named partners and observed CN8 leaves; special codes and aggregates excluded
-    columns:
-      - name: source_dataset
-        description: Eurostat dataset identifier.
-        data_tests: [not_null]
-      - name: reporter_code
-        description: Reporting geography code.
-        data_tests: [not_null]
-      - name: month_key
-        description: First day of the reference month.
-        data_tests: [not_null]
-      - name: classification_year
-        description: Calendar year whose CN classification applies.
-        data_tests: [not_null]
-      - name: product_group
-        description: Disjoint analytical product group.
-        data_tests: [not_null]
-      - name: flow_code
-        description: One for imports and two for exports.
-        data_tests: [not_null]
-      - name: flow_name
-        description: Imports or exports.
-        data_tests: [not_null]
-      - name: value_basis
-        description: CIF for imports and FOB for exports.
-        data_tests: [not_null]
-      - name: trade_partner_key
-        description: Named-partner dimension key.
-        data_tests: [not_null]
-      - name: partner_code
-        description: Named partner code.
-        data_tests: [not_null]
-      - name: partner_label
-        description: Publisher label for the named partner.
-        data_tests: [not_null]
-      - name: partner_value_eur
-        description: Numeric value summed across observed leaves for the named partner.
-        data_tests: [not_null]
-      - name: observed_product_count
-        description: Leaves contributing numeric partner values.
-        data_tests: [not_null]
-      - name: named_partner_denominator_eur
-        description: Numeric value summed across named partners only.
-        data_tests: [not_null]
+        expression: trade_balance_eur
+        unit: EUR
+        denominator: none; export FOB value minus import CIF value
+        coverage: WORLD values with identical observed CN8 leaf sets in both flows; not profit or margin
+      origin: Eurostat Comext DS-045409 monthly trade responses and annual CN mapping
+      license: Eurostat reuse terms; attribute Eurostat and access date, identify transformations; Eurostat is not responsible
+        for derived calculations
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+        freshness SLA
+      provenance: data/parquet/trade_observations.json; replacement runs use _revision_state and .state/capture_manifests/<manifest_id>.json
+      license_url: https://ec.europa.eu/eurostat/help/copyright-notice
+      origin_url: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/DS-045409
+    contract:
+      enforced: true
+  columns:
+  - name: source_dataset
+    description: Eurostat dataset identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: reporter_code
+    description: Reporting geography code.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: month_key
+    description: First day of the reference month.
+    data_tests:
+    - not_null
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: classification_year
+    description: Calendar year whose CN classification applies.
+    data_tests:
+    - not_null
+    data_type: smallint
+    meta:
+      unit: calendar year
+  - name: product_group
+    description: Disjoint analytical product group.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: import_value_cif_eur
+    description: Observed WORLD import value on a CIF basis.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: export_value_fob_eur
+    description: Observed WORLD export value on a FOB basis.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: import_product_count
+    description: Import leaves with numeric WORLD values.
+    data_type: bigint
+    meta:
+      unit: count
+  - name: export_product_count
+    description: Export leaves with numeric WORLD values.
+    data_type: bigint
+    meta:
+      unit: count
+  - name: import_product_coverage
+    description: Sorted CN8 leaf signature for observed import values.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: export_product_coverage
+    description: Sorted CN8 leaf signature for observed export values.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: coverage_basis
+    description: Human-readable coverage gate for the balance.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: has_compatible_flow_coverage
+    description: Whether import and export value leaf signatures match and are represented.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: trade_balance_eur
+    description: Export FOB value minus import CIF value when flow coverage matches.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+- name: monthly_partner_shares
+  description: Named-partner value shares over the observed named-partner denominator; aggregate and special codes are excluded.
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per source, reporter, month, product group, flow and named partner
+      metrics:
       - name: named_partner_value_share
-        description: Partner value divided by the named-partner denominator.
-      - name: has_positive_named_denominator
-        description: Whether the named-partner denominator is positive enough to support shares.
-        data_tests: [not_null]
-      - name: named_partner_rank
-        description: Descending value rank with partner code as a stable tie breaker.
-        data_tests: [not_null]
-      - name: concentration_universe
-        description: Human-readable named-partner denominator definition.
-        data_tests: [not_null]
-
-  - name: monthly_partner_concentration
-    description: Named-partner HHI plus separate special, WORLD and reconciliation context with leaf coverage signatures.
-    config:
-      meta:
-        owner: data-platform
-        grain: one row per source, reporter, month, product group and flow
-        metrics:
-          - name: named_partner_hhi
-            expression: named_partner_hhi
-            unit: ratio squared, zero to one
-            denominator: observed numeric value across named partners only
-            coverage: named partners and observed CN8 leaves; special codes and aggregates excluded
-          - name: reconciliation_residual_eur
-            expression: reconciliation_residual_eur
-            unit: EUR
-            denominator: none; WORLD minus observed named and special values per WORLD-covered leaf
-            coverage: WORLD-covered CN8 leaves, with separate coverage signatures for named and special values
-    columns:
-      - name: source_dataset
-        description: Eurostat dataset identifier.
-        data_tests: [not_null]
-      - name: reporter_code
-        description: Reporting geography code.
-        data_tests: [not_null]
-      - name: month_key
-        description: First day of the reference month.
-        data_tests: [not_null]
-      - name: classification_year
-        description: Calendar year whose CN classification applies.
-        data_tests: [not_null]
-      - name: product_group
-        description: Disjoint analytical product group.
-        data_tests: [not_null]
-      - name: flow_code
-        description: One for imports and two for exports.
-        data_tests: [not_null]
-      - name: flow_name
-        description: Imports or exports.
-        data_tests: [not_null]
-      - name: value_basis
-        description: CIF for imports and FOB for exports.
-        data_tests: [not_null]
-      - name: named_partner_value_eur
-        description: Numeric value summed across named partners only.
-      - name: named_partner_count
-        description: Named partners with numeric values; zero when the flow has only special or WORLD context.
-        data_tests: [not_null]
-      - name: has_positive_named_denominator
-        description: Whether the named-partner denominator is positive enough to support shares and HHI.
-        data_tests: [not_null]
-      - name: largest_named_partner_share
-        description: Largest observed named-partner value share.
+        expression: named_partner_value_share
+        unit: ratio
+        denominator: observed numeric value across named partners only
+        coverage: named partners and observed CN8 leaves; special codes and aggregates excluded
+      origin: Eurostat Comext DS-045409 monthly trade responses and annual CN mapping
+      license: Eurostat reuse terms; attribute Eurostat and access date, identify transformations; Eurostat is not responsible
+        for derived calculations
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+        freshness SLA
+      provenance: data/parquet/trade_observations.json; replacement runs use _revision_state and .state/capture_manifests/<manifest_id>.json
+      license_url: https://ec.europa.eu/eurostat/help/copyright-notice
+      origin_url: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/DS-045409
+    contract:
+      enforced: true
+  columns:
+  - name: source_dataset
+    description: Eurostat dataset identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: reporter_code
+    description: Reporting geography code.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: month_key
+    description: First day of the reference month.
+    data_tests:
+    - not_null
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: classification_year
+    description: Calendar year whose CN classification applies.
+    data_tests:
+    - not_null
+    data_type: smallint
+    meta:
+      unit: calendar year
+  - name: product_group
+    description: Disjoint analytical product group.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: flow_code
+    description: One for imports and two for exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: flow_name
+    description: Imports or exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: value_basis
+    description: CIF for imports and FOB for exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: trade_partner_key
+    description: Named-partner dimension key.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: partner_code
+    description: Named partner code.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: partner_label
+    description: Publisher label for the named partner.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: partner_value_eur
+    description: Numeric value summed across observed leaves for the named partner.
+    data_tests:
+    - not_null
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: observed_product_count
+    description: Leaves contributing numeric partner values.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: named_partner_denominator_eur
+    description: Numeric value summed across named partners only.
+    data_tests:
+    - not_null
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: concentration_universe
+    description: Human-readable named-partner denominator definition.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: named_partner_value_share
+    description: Partner value divided by the named-partner denominator.
+    data_type: double
+    meta:
+      unit: ratio
+  - name: has_positive_named_denominator
+    description: Whether the named-partner denominator is positive enough to support shares.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: named_partner_rank
+    description: Descending value rank with partner code as a stable tie breaker.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+- name: monthly_partner_concentration
+  description: Named-partner HHI plus separate special, WORLD and reconciliation context with leaf coverage signatures.
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per source, reporter, month, product group and flow
+      metrics:
       - name: named_partner_hhi
-        description: Sum of squared named-partner value shares on a zero-to-one scale.
-      - name: observed_special_value_eur
-        description: Numeric value summed across observed special partner codes.
-      - name: world_value_eur
-        description: Numeric WORLD value across observed leaves.
+        expression: named_partner_hhi
+        unit: ratio squared, zero to one
+        denominator: observed numeric value across named partners only
+        coverage: named partners and observed CN8 leaves; special codes and aggregates excluded
       - name: reconciliation_residual_eur
-        description: WORLD minus named and special observed values, calculated per WORLD-covered leaf before aggregation.
-      - name: observed_special_share_of_world
-        description: Observed special value divided by WORLD value when WORLD is positive.
-      - name: residual_share_of_world
-        description: Reconciliation residual divided by WORLD value when WORLD is positive.
-      - name: named_observed_product_count
-        description: Leaves with at least one numeric named-partner value.
-        data_tests: [not_null]
-      - name: special_observed_product_count
-        description: Leaves with at least one numeric special-partner value.
-        data_tests: [not_null]
-      - name: world_observed_product_count
-        description: Leaves with a numeric WORLD value.
-        data_tests: [not_null]
-      - name: named_product_coverage
-        description: Sorted leaf signature for numeric named-partner values.
-      - name: special_product_coverage
-        description: Sorted leaf signature for numeric special-partner values.
-      - name: world_product_coverage
-        description: Sorted leaf signature for numeric WORLD values.
-      - name: reconciliation_status
-        description: WORLD availability, coverage mismatch or residual direction.
-        data_tests: [not_null]
-      - name: concentration_universe
-        description: Human-readable named-partner denominator definition.
-        data_tests: [not_null]
-
-  - name: metric_dictionary
-    description: Metric definitions compiled from each governed model's metadata.
-    config:
-      meta:
-        owner: data-platform
-        grain: one row per metric name
-    columns:
-      - name: metric_name
-        description: Stable metric name from model metadata.
-        data_tests: [not_null, unique]
-      - name: model_name
-        description: Governed dbt model that publishes the metric.
-        data_tests: [not_null]
-      - name: metric_expression
-        description: Column or expression that implements the metric.
-        data_tests: [not_null]
-      - name: metric_unit
-        description: Metric unit or scale.
-        data_tests: [not_null]
-      - name: denominator
-        description: Explicit denominator or statement that none applies.
-        data_tests: [not_null]
-      - name: coverage
-        description: Declared observation universe and material limitations.
-        data_tests: [not_null]
+        expression: reconciliation_residual_eur
+        unit: EUR
+        denominator: none; WORLD minus observed named and special values per WORLD-covered leaf
+        coverage: WORLD-covered CN8 leaves, with separate coverage signatures for named and special values
+      origin: Eurostat Comext DS-045409 monthly trade responses and annual CN mapping
+      license: Eurostat reuse terms; attribute Eurostat and access date, identify transformations; Eurostat is not responsible
+        for derived calculations
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+        freshness SLA
+      provenance: data/parquet/trade_observations.json; replacement runs use _revision_state and .state/capture_manifests/<manifest_id>.json
+      license_url: https://ec.europa.eu/eurostat/help/copyright-notice
+      origin_url: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/DS-045409
+    contract:
+      enforced: true
+  columns:
+  - name: source_dataset
+    description: Eurostat dataset identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: reporter_code
+    description: Reporting geography code.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: month_key
+    description: First day of the reference month.
+    data_tests:
+    - not_null
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: classification_year
+    description: Calendar year whose CN classification applies.
+    data_tests:
+    - not_null
+    data_type: smallint
+    meta:
+      unit: calendar year
+  - name: product_group
+    description: Disjoint analytical product group.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: flow_code
+    description: One for imports and two for exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: named_partner_value_eur
+    description: Numeric value summed across named partners only.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: largest_named_partner_share
+    description: Largest observed named-partner value share.
+    data_type: double
+    meta:
+      unit: ratio
+  - name: named_partner_hhi
+    description: Sum of squared named-partner value shares on a zero-to-one scale.
+    data_type: double
+    meta:
+      unit: ratio squared
+  - name: observed_special_value_eur
+    description: Numeric value summed across observed special partner codes.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: world_value_eur
+    description: Numeric WORLD value across observed leaves.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: reconciliation_residual_eur
+    description: WORLD minus named and special observed values, calculated per WORLD-covered leaf before aggregation.
+    data_type: decimal(38,4)
+    meta:
+      unit: EUR
+  - name: named_observed_product_count
+    description: Leaves with at least one numeric named-partner value.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: special_observed_product_count
+    description: Leaves with at least one numeric special-partner value.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: world_observed_product_count
+    description: Leaves with a numeric WORLD value.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: named_product_coverage
+    description: Sorted leaf signature for numeric named-partner values.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: special_product_coverage
+    description: Sorted leaf signature for numeric special-partner values.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: world_product_coverage
+    description: Sorted leaf signature for numeric WORLD values.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: concentration_universe
+    description: Human-readable named-partner denominator definition.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: flow_name
+    description: Imports or exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: value_basis
+    description: CIF for imports and FOB for exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: named_partner_count
+    description: Named partners with numeric values; zero when the flow has only special or WORLD context.
+    data_tests:
+    - not_null
+    data_type: bigint
+    meta:
+      unit: count
+  - name: has_positive_named_denominator
+    description: Whether the named-partner denominator is positive enough to support shares and HHI.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: observed_special_share_of_world
+    description: Observed special value divided by WORLD value when WORLD is positive.
+    data_type: double
+    meta:
+      unit: ratio
+  - name: residual_share_of_world
+    description: Reconciliation residual divided by WORLD value when WORLD is positive.
+    data_type: double
+    meta:
+      unit: ratio
+  - name: reconciliation_status
+    description: WORLD availability, coverage mismatch or residual direction.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+- name: metric_dictionary
+  description: Metric definitions compiled from each governed model's metadata.
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per metric name
+      origin: World Bank monthly Commodity Price Data workbook; Eurostat Comext DS-045409 monthly trade responses and annual
+        CN mapping
+      license: World Bank dataset terms; third-party conditions apply and real-observation redistribution is unresolved; Eurostat
+        reuse terms; attribute Eurostat and access date, identify transformations; Eurostat is not responsible for derived
+        calculations
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+        freshness SLA
+      provenance: data/parquet/benchmark_prices.json and data/parquet/trade_observations.json; replacement runs use _revision_state
+        and .state/capture_manifests/<manifest_id>.json
+      license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets; https://ec.europa.eu/eurostat/help/copyright-notice
+      origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx;
+        https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/DS-045409
+    contract:
+      enforced: true
+  columns:
+  - name: metric_name
+    description: Stable metric name from model metadata.
+    data_tests:
+    - not_null
+    - unique
+    data_type: varchar
+    meta:
+      unit: none
+  - name: model_name
+    description: Governed dbt model that publishes the metric.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: metric_expression
+    description: Column or expression that implements the metric.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: metric_unit
+    description: Metric unit or scale.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: unit label
+  - name: denominator
+    description: Explicit denominator or statement that none applies.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: coverage
+    description: Declared observation universe and material limitations.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none

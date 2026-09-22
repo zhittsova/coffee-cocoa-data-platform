@@ -1,14 +1,46 @@
 version: 2
-
 seeds:
-  - name: trade_product_groups
-    description: Disjoint supported CN8 leaves and their inspected annual validity.
-    columns:
-      - name: product_code
-        data_tests: [not_null, unique]
-      - name: product_group
-        data_tests: [not_null]
-      - name: valid_from_year
-        data_tests: [not_null]
-      - name: valid_to_year
-        data_tests: [not_null]
+- name: trade_product_groups
+  description: Disjoint supported CN8 leaves and their inspected annual validity.
+  columns:
+  - name: product_code
+    data_tests:
+    - not_null
+    - unique
+    description: Eight-character CN leaf code retained as text.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: product_group
+    data_tests:
+    - not_null
+    description: Disjoint analytical group for the CN8 leaf.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: valid_from_year
+    data_tests:
+    - not_null
+    description: First inspected classification year in which the CN8 leaf is supported.
+    data_type: integer
+    meta:
+      unit: calendar year
+  - name: valid_to_year
+    data_tests:
+    - not_null
+    description: Last inspected classification year in which the CN8 leaf is supported.
+    data_type: integer
+    meta:
+      unit: calendar year
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per supported CN8 leaf
+      origin: Project-maintained supported CN8 leaf mapping from inspected Eurostat annual classifications
+      license: Eurostat reuse terms; attribute Eurostat and access date, identify transformations; Eurostat is not responsible
+        for derived calculations
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual review when the supported CN classification years change; no automatic schedule
+      provenance: dbt/seeds/trade_product_groups.csv and design/data-contracts.md
+      license_url: https://ec.europa.eu/eurostat/help/copyright-notice
+      origin_url: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/DS-045409

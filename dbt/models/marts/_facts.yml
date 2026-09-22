@@ -1,179 +1,368 @@
 version: 2
-
 models:
-  - name: fct_benchmark_prices
-    description: Benchmark price observations kept separate by source series in nominal USD per kilogram.
-    config:
-      meta:
-        owner: data-platform
-        grain: one row per source dataset, benchmark series and reference month
-    columns:
-      - name: benchmark_price_key
-        description: Stable source, series and month fact key.
-        data_tests: [not_null, unique]
-      - name: source_dataset
-        description: World Bank source dataset identifier.
-        data_tests: [not_null]
-      - name: commodity_key
-        description: Coffee or cocoa domain; it does not assert CN8 product identity.
-        data_tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [coffee, cocoa]
-      - name: benchmark_series
-        description: Cocoa, Coffee Arabica or Coffee Robusta World Bank series identifier.
-        data_tests: [not_null]
-      - name: month_key
-        description: First day of the reference month.
-        data_tests: [not_null]
-      - name: price_usd_per_kg
-        description: Nominal benchmark price in USD per kilogram; null means the represented cell lacks a value.
-      - name: change_usd_per_kg
-        description: Difference from the prior calendar month's usable price in USD per kilogram.
-      - name: change_percent
-        description: Percentage change from the prior calendar month's usable positive price.
-      - name: currency_code
-        description: ISO currency code, always USD.
-        data_tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [USD]
-      - name: mass_unit
-        description: Price denominator unit, always kg.
-        data_tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [kg]
-      - name: source_capture_id
-        description: SHA-256 identity of the validated source capture.
-        data_tests: [not_null]
-
-  - name: fct_trade_observations
-    description: Paired Eurostat value and mass cells without combining WORLD, area aggregates, special codes or named partners.
-    config:
-      meta:
-        owner: data-platform
-        grain: one row per source, reporter, partner, CN8 leaf, flow and reference month
-    columns:
-      - name: trade_observation_key
-        description: Stable natural fact key.
-        data_tests: [not_null, unique]
-      - name: trade_product_key
-        description: CN8 leaf and classification-year dimension key.
-        data_tests:
-          - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_trade_product')
-                field: trade_product_key
-      - name: trade_partner_key
-        description: Source, reporter and partner dimension key.
-        data_tests:
-          - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_trade_partner')
-                field: trade_partner_key
-      - name: commodity_key
-        description: Coffee or cocoa conformed commodity key.
-        data_tests:
-          - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_commodity')
-                field: commodity_key
-      - name: month_key
-        description: First day of the reference month.
-        data_tests:
-          - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_calendar_month')
-                field: month_key
-      - name: source_dataset
-        description: Eurostat dataset identifier.
-        data_tests: [not_null]
-      - name: frequency_code
-        description: Source frequency, always monthly M.
-        data_tests: [not_null]
-      - name: reporter_code
-        description: Reporting geography code, currently DE.
-        data_tests: [not_null]
-      - name: partner_code
-        description: Publisher partner category code.
-        data_tests: [not_null]
-      - name: partner_label
-        description: Publisher label for the partner code.
-        data_tests: [not_null]
-      - name: partner_class
-        description: Named geography, special category or aggregate area.
-        data_tests: [not_null]
-      - name: is_partner_detail
-        description: False for aggregate areas and true for named and special categories.
-        data_tests: [not_null]
-      - name: product_code
-        description: Eight-character CN leaf code retained as text.
-        data_tests: [not_null]
-      - name: product_group
-        description: Disjoint analytical group for the CN8 leaf.
-        data_tests: [not_null]
-      - name: classification_code
-        description: Combined Nomenclature identifier.
-        data_tests: [not_null]
-      - name: classification_year
-        description: Calendar year whose CN classification applies.
-        data_tests: [not_null]
-      - name: comparability_segment
-        description: Safe within-leaf comparison segment around the 18069090 scope break.
-        data_tests: [not_null]
-      - name: flow_code
-        description: Source flow code, one for imports and two for exports.
-        data_tests: [not_null]
-      - name: flow_name
-        description: Imports or exports.
-        data_tests: [not_null]
-      - name: value_basis
-        description: CIF for import values and FOB for export values.
-        data_tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: [CIF, FOB]
-      - name: trade_value_eur
-        description: Statistical border value in EUR; null if the represented cell is unavailable or absent.
-      - name: net_mass_kg
-        description: Net mass in kilograms; null if the represented cell is unavailable or absent.
-      - name: unit_value_eur_per_kg
-        description: Trade value divided by positive paired net mass; this is not a retail price, margin or bean-equivalent measure.
-      - name: value_cell_present
-        description: Whether the source represented the value coordinate, including status-only cells.
-        data_tests: [not_null]
-      - name: has_numeric_value
-        description: Whether the represented value coordinate contains a numeric value.
-        data_tests: [not_null]
-      - name: value_status
-        description: Nullable publisher status for the value cell.
-      - name: value_status_available
-        description: Whether the response supplied a status field for value cells.
-      - name: quantity_cell_present
-        description: Whether the source represented the mass coordinate, including status-only cells.
-        data_tests: [not_null]
-      - name: has_numeric_mass
-        description: Whether the represented mass coordinate contains a numeric value.
-        data_tests: [not_null]
-      - name: quantity_status
-        description: Nullable publisher status for the mass cell.
-      - name: quantity_status_available
-        description: Whether the response supplied a status field for mass cells.
-      - name: has_paired_measures
-        description: Whether both value and mass are numeric for the same source coordinate.
-        data_tests: [not_null]
-      - name: source_capture_id
-        description: SHA-256 identity of the validated response capture.
-        data_tests: [not_null]
-      - name: source_update_time
-        description: Dataset response update timestamp, not a cell publication time.
-        data_tests: [not_null]
+- name: fct_benchmark_prices
+  description: Benchmark price observations kept separate by source series in nominal USD per kilogram.
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per source dataset, benchmark series and reference month
+      origin: World Bank monthly Commodity Price Data workbook
+      license: World Bank dataset terms; third-party conditions apply and real-observation redistribution is unresolved
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+        freshness SLA
+      provenance: data/parquet/benchmark_prices.json; replacement runs use _revision_state and .state/capture_manifests/<manifest_id>.json
+      license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+      origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+    contract:
+      enforced: true
+  columns:
+  - name: source_dataset
+    description: World Bank source dataset identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: benchmark_series
+    description: Cocoa, Coffee Arabica or Coffee Robusta World Bank series identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: month_key
+    description: First day of the reference month.
+    data_tests:
+    - not_null
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: price_usd_per_kg
+    description: Nominal benchmark price in USD per kilogram; null means the represented cell lacks a value.
+    data_type: decimal(20,8)
+    meta:
+      unit: USD/kg
+  - name: change_usd_per_kg
+    description: Difference from the prior calendar month's usable price in USD per kilogram.
+    data_type: decimal(21,8)
+    meta:
+      unit: USD/kg
+  - name: change_percent
+    description: Percentage change from the prior calendar month's usable positive price.
+    data_type: double
+    meta:
+      unit: percent
+  - name: currency_code
+    description: ISO currency code, always USD.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - USD
+    data_type: varchar
+    meta:
+      unit: unit label
+  - name: mass_unit
+    description: Price denominator unit, always kg.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - kg
+    data_type: varchar
+    meta:
+      unit: unit label
+  - name: source_capture_id
+    description: SHA-256 identity of the validated source capture.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: benchmark_price_key
+    description: Stable source, series and month fact key.
+    data_tests:
+    - not_null
+    - unique
+    data_type: varchar
+    meta:
+      unit: none
+  - name: commodity_key
+    description: Coffee or cocoa domain; it does not assert CN8 product identity.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - coffee
+          - cocoa
+    data_type: varchar
+    meta:
+      unit: none
+- name: fct_trade_observations
+  description: Paired Eurostat value and mass cells without combining WORLD, area aggregates, special codes or named partners.
+  config:
+    meta:
+      owner: data-platform
+      grain: one row per source, reporter, partner, CN8 leaf, flow and reference month
+      origin: Eurostat Comext DS-045409 monthly trade responses and annual CN mapping
+      license: Eurostat reuse terms; attribute Eurostat and access date, identify transformations; Eurostat is not responsible
+        for derived calculations
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicitly requested live capture/replacement; no scheduled refresh or
+        freshness SLA
+      provenance: data/parquet/trade_observations.json; replacement runs use _revision_state and .state/capture_manifests/<manifest_id>.json
+      license_url: https://ec.europa.eu/eurostat/help/copyright-notice
+      origin_url: https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/DS-045409
+    contract:
+      enforced: true
+  columns:
+  - name: month_key
+    description: First day of the reference month.
+    data_tests:
+    - not_null
+    - relationships:
+        arguments:
+          to: ref('dim_calendar_month')
+          field: month_key
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: source_dataset
+    description: Eurostat dataset identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: frequency_code
+    description: Source frequency, always monthly M.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: reporter_code
+    description: Reporting geography code, currently DE.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: partner_code
+    description: Publisher partner category code.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: partner_label
+    description: Publisher label for the partner code.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: partner_class
+    description: Named geography, special category or aggregate area.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: is_partner_detail
+    description: False for aggregate areas and true for named and special categories.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: product_code
+    description: Eight-character CN leaf code retained as text.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: product_group
+    description: Disjoint analytical group for the CN8 leaf.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: classification_code
+    description: Combined Nomenclature identifier.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: classification_year
+    description: Calendar year whose CN classification applies.
+    data_tests:
+    - not_null
+    data_type: smallint
+    meta:
+      unit: calendar year
+  - name: comparability_segment
+    description: Safe within-leaf comparison segment around the 18069090 scope break.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: flow_code
+    description: Source flow code, one for imports and two for exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: flow_name
+    description: Imports or exports.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: value_basis
+    description: CIF for import values and FOB for export values.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - CIF
+          - FOB
+    data_type: varchar
+    meta:
+      unit: none
+  - name: trade_value_eur
+    description: Statistical border value in EUR; null if the represented cell is unavailable or absent.
+    data_type: decimal(24,4)
+    meta:
+      unit: EUR
+  - name: net_mass_kg
+    description: Net mass in kilograms; null if the represented cell is unavailable or absent.
+    data_type: decimal(34,4)
+    meta:
+      unit: kg
+  - name: unit_value_eur_per_kg
+    description: Trade value divided by positive paired net mass; this is not a retail price, margin or bean-equivalent measure.
+    data_type: double
+    meta:
+      unit: EUR/kg
+  - name: value_cell_present
+    description: Whether the source represented the value coordinate, including status-only cells.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: has_numeric_value
+    description: Whether the represented value coordinate contains a numeric value.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: value_status
+    description: Nullable publisher status for the value cell.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: value_status_available
+    description: Whether the response supplied a status field for value cells.
+    data_type: boolean
+    meta:
+      unit: none
+  - name: quantity_cell_present
+    description: Whether the source represented the mass coordinate, including status-only cells.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: has_numeric_mass
+    description: Whether the represented mass coordinate contains a numeric value.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: quantity_status
+    description: Nullable publisher status for the mass cell.
+    data_type: varchar
+    meta:
+      unit: none
+  - name: quantity_status_available
+    description: Whether the response supplied a status field for mass cells.
+    data_type: boolean
+    meta:
+      unit: none
+  - name: has_paired_measures
+    description: Whether both value and mass are numeric for the same source coordinate.
+    data_tests:
+    - not_null
+    data_type: boolean
+    meta:
+      unit: none
+  - name: source_capture_id
+    description: SHA-256 identity of the validated response capture.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: none
+  - name: source_update_time
+    description: Dataset response update timestamp, not a cell publication time.
+    data_tests:
+    - not_null
+    data_type: varchar
+    meta:
+      unit: publisher timestamp text
+  - name: trade_observation_key
+    description: Stable natural fact key.
+    data_tests:
+    - not_null
+    - unique
+    data_type: varchar
+    meta:
+      unit: none
+  - name: trade_product_key
+    description: CN8 leaf and classification-year dimension key.
+    data_tests:
+    - not_null
+    - relationships:
+        arguments:
+          to: ref('dim_trade_product')
+          field: trade_product_key
+    data_type: varchar
+    meta:
+      unit: none
+  - name: trade_partner_key
+    description: Source, reporter and partner dimension key.
+    data_tests:
+    - not_null
+    - relationships:
+        arguments:
+          to: ref('dim_trade_partner')
+          field: trade_partner_key
+    data_type: varchar
+    meta:
+      unit: none
+  - name: commodity_key
+    description: Coffee or cocoa conformed commodity key.
+    data_tests:
+    - not_null
+    - relationships:
+        arguments:
+          to: ref('dim_commodity')
+          field: commodity_key
+    data_type: varchar
+    meta:
+      unit: none

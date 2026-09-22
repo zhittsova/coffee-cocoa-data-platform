@@ -28,6 +28,21 @@ declare their observed CN8 and partner coverage before calculating unit values,
 product mix, balances, shares or concentration. `metric_dictionary` exposes each
 governed metric's expression, unit, denominator and coverage from model metadata.
 
+Generate and validate the local catalog against that fixture warehouse:
+
+```sh
+uv run --locked python -m coffee_cocoa_platform.catalog_cli --root .
+uv run --locked dbt docs serve --project-dir dbt --profiles-dir dbt
+```
+
+The generated site is in `dbt/target/index.html`, with a local capture and run
+index in `dbt/target/provenance.json`. Its dbt source and model pages
+show typed columns, ownership, grain, source terms and lineage. Dagster's source
+asset pages use the same dbt source definitions. Capture IDs in the facts resolve
+through the local JSON manifests, or the revision registry after replacement.
+Catalog classification describes data handling; it does not grant access or
+enforce permissions. No scheduled refresh or freshness SLA is configured.
+
 To fetch the World Bank workbook explicitly, choose an inclusive range:
 
 ```sh

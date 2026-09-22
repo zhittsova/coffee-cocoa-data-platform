@@ -17,6 +17,7 @@ data/
 warehouse/
 .state/
 target/
+dbt/manifest.json
 dbt_packages/
 dbt/.user.yml
 logs/

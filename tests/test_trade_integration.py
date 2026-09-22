@@ -6,6 +6,7 @@ import subprocess
 import sys
 from datetime import date
 from decimal import Decimal
+from itertools import pairwise
 from pathlib import Path
 
 import duckdb
@@ -78,7 +79,7 @@ def test_two_source_fixture_pipeline(tmp_path):
         ).fetchone()[0]
 
         manifest = json.loads(
-            (Path(__file__).parents[1] / "dbt/manifest.json").read_text()
+            (Path(__file__).parents[1] / "dbt/target/manifest.json").read_text()
         )
         public_nodes = [
             node
@@ -200,6 +201,56 @@ def test_two_source_fixture_pipeline(tmp_path):
     assert concentration[2][8] == Decimal("300.0000")
     assert concentration[3][8] == Decimal("180.0000")
     assert concentration[4][8] == Decimal("300.0000")
+
+    target = tmp_path / "catalog"
+    catalog_result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "coffee_cocoa_platform.catalog_cli",
+            "--root",
+            str(tmp_path),
+            "--target-dir",
+            str(target),
+        ],
+        env=dict(os.environ, DAGSTER_DISABLE_TELEMETRY="1"),
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert catalog_result.returncode == 0, catalog_result.stdout + catalog_result.stderr
+    assert (target / "index.html").is_file()
+    provenance = json.loads((target / "provenance.json").read_text())
+    assert price_manifest["sha256"] in provenance["captures"]
+    assert {item["capture"]["sha256"] for item in trade_manifest["slices"]} >= {
+        capture_id
+        for capture_id, detail in provenance["captures"].items()
+        if detail["dataset"] == "trade"
+    }
+    catalog_manifest = json.loads((target / "manifest.json").read_text())
+    for path in (
+        (
+            "monthly_benchmark_dynamics",
+            "fct_benchmark_prices",
+            "monthly_benchmark_prices",
+            "stg_benchmark_prices",
+            "source.coffee_cocoa.world_bank_prices.monthly_prices",
+        ),
+        (
+            "monthly_partner_concentration",
+            "fct_trade_observations",
+            "int_trade_observations_pivoted",
+            "stg_trade_observations",
+            "source.coffee_cocoa.eurostat_trade.monthly_trade",
+        ),
+    ):
+        for parent, child in pairwise(path):
+            parent_node = catalog_manifest["nodes"]["model.coffee_cocoa." + parent]
+            child_id = (
+                child if child.startswith("source.") else "model.coffee_cocoa." + child
+            )
+            assert child_id in parent_node["depends_on"]["nodes"]
 
 
 def test_combined_definitions_import_without_io(tmp_path):
