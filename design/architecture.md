@@ -2,8 +2,8 @@
 
 Status: the World Bank price path, bounded Eurostat trade staging path, dbt
 domain models, bounded source replacements, shared writer controls and immutable
-read snapshots run locally. Forecast datasets are defined; fitting, recovery and
-deployment controls remain planned.
+read snapshots run locally. Forecast datasets and retrospective evaluation run
+locally; recovery and deployment controls remain planned.
 
 ## Responsibilities
 
@@ -82,6 +82,10 @@ dbt prepares features with declared observation periods, availability assumption
 and source versions. Python performs fitting and evaluation; Dagster coordinates
 the resulting assets. Use time-ordered evaluation and compare simple baselines.
 Report errors and interval coverage by forecast horizon.
+
+The [forecast evaluation](features/010-forecast-evaluation.md) reads a tested
+snapshot, freezes candidate selection and interval calibration before the
+holdout, then publishes dbt result marts and a new consistent snapshot.
 
 Current downloads may contain revisions unavailable historically. A backtest using
 those downloads is retrospective unless historical vintages and availability

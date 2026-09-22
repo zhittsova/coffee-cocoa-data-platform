@@ -1,0 +1,478 @@
+version: 2
+sources:
+- name: forecast_results
+  description: Versioned local forecast evaluation artifacts from a governed read snapshot.
+  tables:
+  - name: predictions
+    description: Versioned local forecast predictions in Parquet.
+    config:
+      enabled: '{{ env_var(''COFFEE_COCOA_ENABLE_FORECAST_RESULTS'', ''false'') == ''true'' }}'
+      external_location: '{{ env_var(''COFFEE_COCOA_HOME'', ''.'') }}/data/parquet/forecast_predictions.parquet'
+      meta:
+        owner: data-platform
+        origin: Python forecast evaluation from governed World Bank cocoa prices
+        license: World Bank dataset terms; real-observation redistribution is unresolved
+        classification: local derived data; real observations remain local
+        refresh_expectation: Explicit local forecast evaluation only
+        provenance: data/parquet/forecast_results.json and data/forecasts/runs/<run_id>/manifest.json
+        origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+        license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+        grain: one row per run, origin, horizon and model
+    columns:
+    - name: run_id
+      description: Evaluation run identity
+      data_type: varchar
+      meta:
+        unit: none
+    - name: origin_month
+      description: Forecast origin reference month
+      data_type: date
+      meta:
+        unit: calendar date
+    - name: target_month
+      description: Forecast target reference month
+      data_type: date
+      meta:
+        unit: calendar date
+    - name: issue_at_utc
+      description: Nominal issue time after the origin month
+      data_type: timestamp with time zone
+      meta:
+        unit: UTC timestamp
+    - name: split_name
+      description: Fixed development or holdout split
+      data_type: varchar
+      meta:
+        unit: none
+    - name: evaluation_mode
+      description: Retrospective current-vintage mode
+      data_type: varchar
+      meta:
+        unit: none
+    - name: horizon_months
+      description: Forecast horizon in months
+      data_type: bigint
+      meta:
+        unit: months
+    - name: model_name
+      description: Persistence, seasonal naive or AR(1)
+      data_type: varchar
+      meta:
+        unit: none
+    - name: fit_status
+      description: Prediction or fit availability status
+      data_type: varchar
+      meta:
+        unit: none
+    - name: labeled_training_origins
+      description: Governed labeled prior-origin count at issue
+      data_type: bigint
+      meta:
+        unit: origins
+    - name: origin_capture_id
+      description: Capture ID for the origin price
+      data_type: varchar
+      meta:
+        unit: none
+    - name: seasonal_input_month
+      description: Target-aligned seasonal reference month
+      data_type: date
+      meta:
+        unit: calendar date
+    - name: seasonal_input_capture_id
+      description: Capture ID for the seasonal input
+      data_type: varchar
+      meta:
+        unit: none
+    - name: target_capture_id
+      description: Capture ID for the target label
+      data_type: varchar
+      meta:
+        unit: none
+    - name: prediction_usd_per_kg
+      description: Point prediction
+      data_type: double
+      meta:
+        unit: USD/kg
+    - name: target_usd_per_kg
+      description: Observed label when available
+      data_type: double
+      meta:
+        unit: USD/kg
+    - name: absolute_error
+      description: Absolute out-of-sample error
+      data_type: double
+      meta:
+        unit: USD/kg
+    - name: squared_error
+      description: Squared out-of-sample error
+      data_type: double
+      meta:
+        unit: (USD/kg)^2
+    - name: smape_percent
+      description: Symmetric absolute percentage error with zero-pair convention
+      data_type: double
+      meta:
+        unit: percent
+    - name: interval_lower
+      description: Lower empirical interval bound
+      data_type: double
+      meta:
+        unit: USD/kg
+    - name: interval_upper
+      description: Upper empirical interval bound
+      data_type: double
+      meta:
+        unit: USD/kg
+    - name: interval_covered
+      description: Whether a scored target lies inside the interval
+      data_type: boolean
+      meta:
+        unit: none
+    - name: calibration_count
+      description: Eligible prior development residuals
+      data_type: bigint
+      meta:
+        unit: residuals
+  - name: metrics
+    description: Versioned local forecast metrics in Parquet.
+    config:
+      enabled: '{{ env_var(''COFFEE_COCOA_ENABLE_FORECAST_RESULTS'', ''false'') == ''true'' }}'
+      external_location: '{{ env_var(''COFFEE_COCOA_HOME'', ''.'') }}/data/parquet/forecast_metrics.parquet'
+      meta:
+        owner: data-platform
+        origin: Python forecast evaluation from governed World Bank cocoa prices
+        license: World Bank dataset terms; real-observation redistribution is unresolved
+        classification: local derived data; real observations remain local
+        refresh_expectation: Explicit local forecast evaluation only
+        provenance: data/parquet/forecast_results.json and data/forecasts/runs/<run_id>/manifest.json
+        origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+        license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+        grain: one row per run, split, horizon and model
+    columns:
+    - name: run_id
+      description: Evaluation run identity
+      data_type: varchar
+      meta:
+        unit: none
+    - name: split_name
+      description: Fixed development or holdout split
+      data_type: varchar
+      meta:
+        unit: none
+    - name: horizon_months
+      description: Forecast horizon in months
+      data_type: bigint
+      meta:
+        unit: months
+    - name: model_name
+      description: Persistence, seasonal naive or AR(1)
+      data_type: varchar
+      meta:
+        unit: none
+    - name: is_selected
+      description: Selected by development MAE for this horizon
+      data_type: boolean
+      meta:
+        unit: none
+    - name: origin_count
+      description: Declared origins in the evaluated split
+      data_type: bigint
+      meta:
+        unit: origins
+    - name: prediction_count
+      description: Origins with a point prediction
+      data_type: bigint
+      meta:
+        unit: predictions
+    - name: scored_count
+      description: Predictions with observed target labels
+      data_type: bigint
+      meta:
+        unit: predictions
+    - name: missing_target_count
+      description: Origins without an observed target label
+      data_type: bigint
+      meta:
+        unit: origins
+    - name: failed_fit_count
+      description: Origins with an AR(1) fit failure
+      data_type: bigint
+      meta:
+        unit: origins
+    - name: mae
+      description: Mean absolute error over scored predictions
+      data_type: double
+      meta:
+        unit: USD/kg
+    - name: rmse
+      description: Root mean squared error over scored predictions
+      data_type: double
+      meta:
+        unit: USD/kg
+    - name: smape_percent
+      description: Mean symmetric absolute percentage error
+      data_type: double
+      meta:
+        unit: percent
+    - name: interval_scored_count
+      description: Scored predictions with an available interval
+      data_type: bigint
+      meta:
+        unit: predictions
+    - name: interval_coverage
+      description: Share of interval-scored targets inside bounds
+      data_type: double
+      meta:
+        unit: fraction
+    - name: mean_interval_width
+      description: Mean width of available scored intervals
+      data_type: double
+      meta:
+        unit: USD/kg
+models:
+- name: forecast_predictions
+  description: Governed retrospective cocoa forecast predictions.
+  config:
+    contract:
+      enforced: true
+    meta:
+      owner: data-platform
+      origin: Python forecast evaluation from governed World Bank cocoa prices
+      license: World Bank dataset terms; real-observation redistribution is unresolved
+      classification: local derived data; real observations remain local
+      refresh_expectation: Explicit local forecast evaluation only
+      provenance: data/parquet/forecast_results.json and data/forecasts/runs/<run_id>/manifest.json
+      origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+      license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+      grain: one row per run, origin, horizon and model
+  columns:
+  - name: run_id
+    description: Evaluation run identity
+    data_type: varchar
+    meta:
+      unit: none
+    data_tests:
+    - not_null
+  - name: origin_month
+    description: Forecast origin reference month
+    data_type: date
+    meta:
+      unit: calendar date
+    data_tests:
+    - not_null
+  - name: target_month
+    description: Forecast target reference month
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: issue_at_utc
+    description: Nominal issue time after the origin month
+    data_type: timestamp with time zone
+    meta:
+      unit: UTC timestamp
+  - name: split_name
+    description: Fixed development or holdout split
+    data_type: varchar
+    meta:
+      unit: none
+    data_tests:
+    - not_null
+  - name: evaluation_mode
+    description: Retrospective current-vintage mode
+    data_type: varchar
+    meta:
+      unit: none
+  - name: horizon_months
+    description: Forecast horizon in months
+    data_type: bigint
+    meta:
+      unit: months
+    data_tests:
+    - not_null
+  - name: model_name
+    description: Persistence, seasonal naive or AR(1)
+    data_type: varchar
+    meta:
+      unit: none
+    data_tests:
+    - not_null
+  - name: fit_status
+    description: Prediction or fit availability status
+    data_type: varchar
+    meta:
+      unit: none
+  - name: labeled_training_origins
+    description: Governed labeled prior-origin count at issue
+    data_type: bigint
+    meta:
+      unit: origins
+  - name: origin_capture_id
+    description: Capture ID for the origin price
+    data_type: varchar
+    meta:
+      unit: none
+  - name: seasonal_input_month
+    description: Target-aligned seasonal reference month
+    data_type: date
+    meta:
+      unit: calendar date
+  - name: seasonal_input_capture_id
+    description: Capture ID for the seasonal input
+    data_type: varchar
+    meta:
+      unit: none
+  - name: target_capture_id
+    description: Capture ID for the target label
+    data_type: varchar
+    meta:
+      unit: none
+  - name: prediction_usd_per_kg
+    description: Point prediction
+    data_type: double
+    meta:
+      unit: USD/kg
+  - name: target_usd_per_kg
+    description: Observed label when available
+    data_type: double
+    meta:
+      unit: USD/kg
+  - name: absolute_error
+    description: Absolute out-of-sample error
+    data_type: double
+    meta:
+      unit: USD/kg
+  - name: squared_error
+    description: Squared out-of-sample error
+    data_type: double
+    meta:
+      unit: (USD/kg)^2
+  - name: smape_percent
+    description: Symmetric absolute percentage error with zero-pair convention
+    data_type: double
+    meta:
+      unit: percent
+  - name: interval_lower
+    description: Lower empirical interval bound
+    data_type: double
+    meta:
+      unit: USD/kg
+  - name: interval_upper
+    description: Upper empirical interval bound
+    data_type: double
+    meta:
+      unit: USD/kg
+  - name: interval_covered
+    description: Whether a scored target lies inside the interval
+    data_type: boolean
+    meta:
+      unit: none
+  - name: calibration_count
+    description: Eligible prior development residuals
+    data_type: bigint
+    meta:
+      unit: residuals
+- name: forecast_metrics
+  description: Governed retrospective cocoa forecast metrics.
+  config:
+    contract:
+      enforced: true
+    meta:
+      owner: data-platform
+      origin: Python forecast evaluation from governed World Bank cocoa prices
+      license: World Bank dataset terms; real-observation redistribution is unresolved
+      classification: local derived data; real observations remain local
+      refresh_expectation: Explicit local forecast evaluation only
+      provenance: data/parquet/forecast_results.json and data/forecasts/runs/<run_id>/manifest.json
+      origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+      license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+      grain: one row per run, split, horizon and model
+  columns:
+  - name: run_id
+    description: Evaluation run identity
+    data_type: varchar
+    meta:
+      unit: none
+    data_tests:
+    - not_null
+  - name: split_name
+    description: Fixed development or holdout split
+    data_type: varchar
+    meta:
+      unit: none
+    data_tests:
+    - not_null
+  - name: horizon_months
+    description: Forecast horizon in months
+    data_type: bigint
+    meta:
+      unit: months
+    data_tests:
+    - not_null
+  - name: model_name
+    description: Persistence, seasonal naive or AR(1)
+    data_type: varchar
+    meta:
+      unit: none
+    data_tests:
+    - not_null
+  - name: is_selected
+    description: Selected by development MAE for this horizon
+    data_type: boolean
+    meta:
+      unit: none
+  - name: origin_count
+    description: Declared origins in the evaluated split
+    data_type: bigint
+    meta:
+      unit: origins
+  - name: prediction_count
+    description: Origins with a point prediction
+    data_type: bigint
+    meta:
+      unit: predictions
+  - name: scored_count
+    description: Predictions with observed target labels
+    data_type: bigint
+    meta:
+      unit: predictions
+  - name: missing_target_count
+    description: Origins without an observed target label
+    data_type: bigint
+    meta:
+      unit: origins
+  - name: failed_fit_count
+    description: Origins with an AR(1) fit failure
+    data_type: bigint
+    meta:
+      unit: origins
+  - name: mae
+    description: Mean absolute error over scored predictions
+    data_type: double
+    meta:
+      unit: USD/kg
+  - name: rmse
+    description: Root mean squared error over scored predictions
+    data_type: double
+    meta:
+      unit: USD/kg
+  - name: smape_percent
+    description: Mean symmetric absolute percentage error
+    data_type: double
+    meta:
+      unit: percent
+  - name: interval_scored_count
+    description: Scored predictions with an available interval
+    data_type: bigint
+    meta:
+      unit: predictions
+  - name: interval_coverage
+    description: Share of interval-scored targets inside bounds
+    data_type: double
+    meta:
+      unit: fraction
+  - name: mean_interval_width
+    description: Mean width of available scored intervals
+    data_type: double
+    meta:
+      unit: USD/kg

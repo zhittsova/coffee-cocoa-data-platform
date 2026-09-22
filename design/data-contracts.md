@@ -237,11 +237,11 @@ retrospective availability mode. dbt publishes separate features and labels
 through the tested read snapshot. Historical as-of evaluation remains gated
 on verified release and capture evidence.
 
-Before forecast fitting, freeze metrics and interval policy. Compare persistence
-and seasonal-naive baselines with one specified candidate.
-Fit transformations and choose the candidate inside development folds only.
-Current-vintage backtests are retrospective; historical release availability was
-not reconstructed. Trade features remain excluded from as-of forecasts until their
-availability policy is justified and tested. A candidate losing to a baseline is
-a valid outcome. dbt owns governed inputs/results, Python fits and evaluates,
-Dagster coordinates execution, and notebooks present the results.
+The [evaluation contract](features/010-forecast-evaluation.md) specifies
+persistence, target-aligned seasonal naive and an AR(1) candidate. Development
+MAE selects a model by horizon before the holdout; empirical intervals use
+eligible development residuals. Current-vintage backtests are retrospective;
+historical release availability was not reconstructed. Trade features remain
+excluded until their availability policy is justified and tested. dbt owns
+governed inputs/results, Python fits and evaluates, Dagster coordinates
+execution, and notebooks present the results.

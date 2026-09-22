@@ -48,15 +48,15 @@ jobs:
       - name: Install locked Python and dependencies
         run: |
           uv python install 3.12.14
-          uv sync --locked --python 3.12.14
+          uv sync --locked --python 3.12.14 --extra forecast
       - name: Check config and lint
-        run: uv run --locked pre-commit run --all-files
+        run: uv run --locked --extra forecast pre-commit run --all-files
       - name: Test package
         run: |
-          uv run --locked pytest -q -m "not integration"
-          uv run --locked python -c "import coffee_cocoa_platform, dagster, dagster_dbt, dbt, duckdb; print('Core imports passed')"
+          uv run --locked --extra forecast pytest -q -m "not integration"
+          uv run --locked --extra forecast python -c "import coffee_cocoa_platform, dagster, dagster_dbt, dbt, duckdb; print('Package imports passed')"
           uv build
       - name: Run offline source pipelines
         env:
           DAGSTER_DISABLE_TELEMETRY: "1"
-        run: uv run --locked pytest -q -m integration
+        run: uv run --locked --extra forecast pytest -q -m integration
