@@ -16,7 +16,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from coffee_cocoa_platform.paths import ProjectPaths
-from coffee_cocoa_platform.prices import PRICE_SCHEMA, SERIES, parse_workbook
+from coffee_cocoa_platform.prices import (
+    PRICE_SCHEMA,
+    SERIES,
+    parse_workbook,
+    write_forecast_capture_metadata,
+)
 from coffee_cocoa_platform.prices import _month as price_month
 from coffee_cocoa_platform.runtime import run_dbt, writer_lock
 from coffee_cocoa_platform.snapshots import publish_snapshot
@@ -339,6 +344,15 @@ def _run_locked(paths: ProjectPaths, request: dict, full_refresh: bool) -> dict:
                 raise RevisionError("Staged source verification failed")
         state.update(scopes=scopes, selected_captures=events, status="building")
         journal.write_text(json.dumps(state, indent=2))
+        price_captures = {
+            row["source_capture_id"] for row in selected["prices"].to_pylist()
+        }
+        if price_captures - captures.keys():
+            raise RevisionError("Selected price capture lacks provenance metadata")
+        write_forecast_capture_metadata(
+            candidate.parquet,
+            {capture_id: captures[capture_id] for capture_id in price_captures},
+        )
         _dbt_build(candidate, scopes, full_refresh)
         state["status"] = "validated"
         history.append(state.copy())

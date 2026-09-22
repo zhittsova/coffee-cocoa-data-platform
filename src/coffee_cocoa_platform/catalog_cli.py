@@ -23,6 +23,7 @@ REQUIRED_META = (
 )
 SELECTED_SOURCE_TABLES = {
     "monthly_prices": "_selected_prices",
+    "forecast_capture_metadata": "forecast_capture_metadata",
     "monthly_trade": "_selected_trade",
 }
 

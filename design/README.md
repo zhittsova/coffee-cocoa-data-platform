@@ -1,8 +1,9 @@
 # Coffee & Cocoa Data Platform
 
 Design status: benchmark prices, bounded trade staging, dbt domain models,
-source replacements and consistent read snapshots run locally. Local runtime
-controls are implemented; forecasts and later operational work remain planned.
+source replacements, forecast datasets and consistent read snapshots run locally.
+Local runtime controls are implemented; forecast fitting and later operational
+work remain planned.
 See [data contracts](data-contracts.md) for the bounded source scope.
 
 Build a local data platform for coffee and cocoa prices and trade, with dbt at
@@ -54,8 +55,10 @@ support verification; generated code or tests alone do not establish correctness
 - [Local metadata catalog](features/006-governance-catalog.md)
 - [Local runtime controls](features/007-runtime-controls.md)
 - [Consistent read snapshots](features/008-read-snapshots.md)
+- [Cocoa forecast datasets](features/009-forecast-datasets.md)
 
 Offline fixtures are the confirmed default. The first forecast targets monthly
-cocoa USD/kg at one- and three-month horizons. Freeze its evaluation splits and
-availability rules before implementation. The 2015-2016 trade extension remains
+cocoa USD/kg at one- and three-month horizons. Its fixed evaluation splits and
+retrospective availability rules are in the forecast dataset contract. The
+2015-2016 trade extension remains
 deferred until annual classifications are validated. Additional reporters and an FX source require their own scoped changes.

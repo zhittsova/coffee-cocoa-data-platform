@@ -69,6 +69,25 @@ def test_dagster_price_and_trade_lineage_reaches_source_assets():
             "stg_trade_observations",
             ["eurostat_trade", "monthly_trade"],
         ),
+        (
+            "forecast_origin_features",
+            "fct_benchmark_prices",
+            "monthly_benchmark_prices",
+            "stg_benchmark_prices",
+            ["world_bank_prices", "monthly_prices"],
+        ),
     ):
         for child, parent in pairwise(path):
             assert AssetKey(parent) in graph.get(AssetKey(child)).parent_keys
+    assert (
+        AssetKey("forecast_origin_features")
+        in graph.get(AssetKey("warehouse_snapshot")).parent_keys
+    )
+    assert (
+        AssetKey("forecast_targets")
+        in graph.get(AssetKey("warehouse_snapshot")).parent_keys
+    )
+    assert (
+        AssetKey(["world_bank_prices", "forecast_capture_metadata"])
+        in graph.get(AssetKey("forecast_capture_metadata")).parent_keys
+    )

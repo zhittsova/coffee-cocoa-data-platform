@@ -1,0 +1,219 @@
+version: 2
+models:
+- name: forecast_capture_metadata
+  description: Selected World Bank capture identities and local provenance, without historical cell release claims.
+  config:
+    meta: &forecast_meta
+      owner: data-platform
+      grain: one row per selected source capture ID
+      origin: World Bank monthly Commodity Price Data workbook
+      license: World Bank dataset terms; real-observation redistribution is unresolved
+      classification: local derived data; source reuse terms still apply
+      refresh_expectation: Manual fixture build or explicit capture/replacement
+      provenance: selected benchmark captures and local revision registry
+      license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+      origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+    contract: {enforced: true}
+  columns:
+  - name: source_capture_id
+    description: Raw workbook SHA-256 and unique capture key.
+    data_type: varchar
+    data_tests: [not_null, unique]
+    meta: {unit: none}
+  - name: source_update_text
+    description: Workbook update label, not a cell release date.
+    data_type: varchar
+    meta: {unit: none}
+  - name: source_update_date
+    description: Parsed publisher workbook update date when known.
+    data_type: date
+    meta: {unit: calendar date}
+  - name: retrieved_at_utc
+    description: Time the selected bytes were retrieved locally.
+    data_type: timestamp with time zone
+    data_tests: [not_null]
+    meta: {unit: UTC timestamp}
+  - name: first_seen_capture_at_utc
+    description: Earliest recorded local capture time for these bytes.
+    data_type: timestamp with time zone
+    data_tests: [not_null]
+    meta: {unit: UTC timestamp}
+- name: forecast_split_manifest
+  description: Fixed development and untouched holdout forecast origins at monthly frequency.
+  config:
+    meta:
+      <<: *forecast_meta
+      grain: one row per origin month
+    contract: {enforced: true}
+  columns:
+  - name: origin_month
+    description: First day of the reference month and unique origin key.
+    data_type: date
+    data_tests: [not_null, unique]
+    meta: {unit: calendar date}
+  - name: issue_at_utc
+    description: Nominal issue time after the origin month, without an availability assertion.
+    data_type: timestamp with time zone
+    data_tests: [not_null]
+    meta: {unit: UTC timestamp}
+  - name: split_name
+    description: Development or untouched holdout assignment.
+    data_type: varchar
+    data_tests: [not_null]
+    meta: {unit: none}
+  - name: evaluation_mode
+    description: Retrospective current-vintage only.
+    data_type: varchar
+    data_tests: [not_null]
+    meta: {unit: none}
+  - name: minimum_observed_history_months
+    description: Required consecutive observed target months before fitting.
+    data_type: integer
+    data_tests: [not_null]
+    meta: {unit: months}
+  - name: minimum_labeled_training_origins
+    description: Required labeled historical origins for either horizon.
+    data_type: integer
+    data_tests: [not_null]
+    meta: {unit: origins}
+- name: forecast_origin_features
+  description: Cocoa origin and calendar lag prices from the selected current vintage, with no future labels.
+  config:
+    meta:
+      <<: *forecast_meta
+      grain: one row per origin month
+    contract: {enforced: true}
+  columns:
+  - name: origin_month
+    description: Forecast reference month and unique feature key.
+    data_type: date
+    data_tests: [not_null, unique]
+    meta: {unit: calendar date}
+  - name: issue_at_utc
+    description: Nominal issue time after the origin month.
+    data_type: timestamp with time zone
+    data_tests: [not_null]
+    meta: {unit: UTC timestamp}
+  - name: split_name
+    description: Fixed development or holdout assignment.
+    data_type: varchar
+    data_tests: [not_null]
+    meta: {unit: none}
+  - name: evaluation_mode
+    description: Retrospective current-vintage only.
+    data_type: varchar
+    data_tests: [not_null]
+    meta: {unit: none}
+  - name: observed_history_months_60
+    description: Numeric target months in the origin's trailing 60 calendar months.
+    data_type: integer
+    data_tests: [not_null]
+    meta: {unit: months}
+  - name: has_minimum_history
+    description: Whether all trailing 60 months have numeric prices.
+    data_type: boolean
+    data_tests: [not_null]
+    meta: {unit: none}
+  - name: lag_0_month
+    description: Origin reference month.
+    data_type: date
+    data_tests: [not_null]
+    meta: {unit: calendar date}
+  - name: lag_0_usd_per_kg
+    description: Selected current-vintage cocoa price at the origin month.
+    data_type: decimal(20,8)
+    meta: {unit: USD/kg}
+  - name: lag_0_capture_id
+    description: Capture ID for the origin price, null when it is absent.
+    data_type: varchar
+    meta: {unit: none}
+  - name: lag_1_month
+    description: Exactly one calendar month before origin.
+    data_type: date
+    data_tests: [not_null]
+    meta: {unit: calendar date}
+  - name: lag_1_usd_per_kg
+    description: Selected current-vintage cocoa price one calendar month before origin.
+    data_type: decimal(20,8)
+    meta: {unit: USD/kg}
+  - name: lag_1_capture_id
+    description: Capture ID for the one-month lag, null when absent.
+    data_type: varchar
+    meta: {unit: none}
+  - name: lag_3_month
+    description: Exactly three calendar months before origin.
+    data_type: date
+    data_tests: [not_null]
+    meta: {unit: calendar date}
+  - name: lag_3_usd_per_kg
+    description: Selected current-vintage cocoa price three calendar months before origin.
+    data_type: decimal(20,8)
+    meta: {unit: USD/kg}
+  - name: lag_3_capture_id
+    description: Capture ID for the three-month lag, null when absent.
+    data_type: varchar
+    meta: {unit: none}
+  - name: lag_12_month
+    description: Exactly twelve calendar months before origin.
+    data_type: date
+    data_tests: [not_null]
+    meta: {unit: calendar date}
+  - name: lag_12_usd_per_kg
+    description: Selected current-vintage cocoa price twelve calendar months before origin.
+    data_type: decimal(20,8)
+    meta: {unit: USD/kg}
+  - name: lag_12_capture_id
+    description: Capture ID for the twelve-month lag, null when absent.
+    data_type: varchar
+    meta: {unit: none}
+- name: forecast_targets
+  description: Separate one- and three-month cocoa labels and pre-origin training-pair counts.
+  config:
+    meta:
+      <<: *forecast_meta
+      grain: one row per origin month and horizon
+    contract: {enforced: true}
+  columns:
+  - name: origin_month
+    description: Forecast reference month.
+    data_type: date
+    data_tests: [not_null]
+    meta: {unit: calendar date}
+  - name: issue_at_utc
+    description: Nominal issue time after the origin month.
+    data_type: timestamp with time zone
+    data_tests: [not_null]
+    meta: {unit: UTC timestamp}
+  - name: split_name
+    description: Fixed development or holdout assignment.
+    data_type: varchar
+    data_tests: [not_null]
+    meta: {unit: none}
+  - name: evaluation_mode
+    description: Retrospective current-vintage only.
+    data_type: varchar
+    data_tests: [not_null]
+    meta: {unit: none}
+  - name: horizon_months
+    description: Forecast horizon, one or three months.
+    data_type: integer
+    data_tests: [not_null, {accepted_values: {arguments: {values: [1, 3]}}}]
+    meta: {unit: months}
+  - name: target_month
+    description: Future label reference month at the declared horizon.
+    data_type: date
+    data_tests: [not_null]
+    meta: {unit: calendar date}
+  - name: target_usd_per_kg
+    description: Selected current-vintage cocoa label, null if unavailable.
+    data_type: decimal(20,8)
+    meta: {unit: USD/kg}
+  - name: target_capture_id
+    description: Capture ID of the label, null if its month is absent.
+    data_type: varchar
+    meta: {unit: none}
+  - name: labeled_training_origins
+    description: Prior origin/target pairs with labels no later than this origin.
+    data_type: integer
+    data_tests: [not_null]
+    meta: {unit: origins}
