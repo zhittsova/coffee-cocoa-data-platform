@@ -39,7 +39,7 @@ models:
     data_tests: [not_null]
     meta: {unit: UTC timestamp}
 - name: forecast_split_manifest
-  description: Fixed development and untouched holdout forecast origins at monthly frequency.
+  description: Fixed training, development and untouched holdout forecast origins at monthly frequency.
   config:
     meta:
       <<: *forecast_meta
@@ -57,7 +57,7 @@ models:
     data_tests: [not_null]
     meta: {unit: UTC timestamp}
   - name: split_name
-    description: Development or untouched holdout assignment.
+    description: Training, development or untouched holdout assignment.
     data_type: varchar
     data_tests: [not_null]
     meta: {unit: none}
@@ -95,7 +95,7 @@ models:
     data_tests: [not_null]
     meta: {unit: UTC timestamp}
   - name: split_name
-    description: Fixed development or holdout assignment.
+    description: Fixed training, development or holdout assignment.
     data_type: varchar
     data_tests: [not_null]
     meta: {unit: none}
@@ -185,7 +185,7 @@ models:
     data_tests: [not_null]
     meta: {unit: UTC timestamp}
   - name: split_name
-    description: Fixed development or holdout assignment.
+    description: Fixed training, development or holdout assignment.
     data_type: varchar
     data_tests: [not_null]
     meta: {unit: none}

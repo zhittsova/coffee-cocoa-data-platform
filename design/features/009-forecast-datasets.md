@@ -3,12 +3,15 @@
 Scope: [issue #22](https://github.com/zhittsova/coffee-cocoa-data-platform/issues/22).
 
 dbt builds a monthly World Bank cocoa USD/kg dataset for one- and three-month
-horizons. `forecast_split_manifest` fixes development origins at January
-2020 through December 2023 and an untouched holdout at January 2024 through
-December 2025. An origin is a reference month; its forecast issue time is
+horizons. `forecast_split_manifest` fixes training origins at January 2016
+through December 2019, development origins at January 2020 through December
+2023, and an untouched holdout at January 2024 through December 2025. An
+origin is a reference month; its forecast issue time is
 00:00 UTC on the first day of the next month. The target month is the origin
 plus the horizon. Historical training uses an expanding window with at least
-60 consecutive observed target months and 48 labeled origins per horizon.
+60 consecutive observed target months at the issue cutoff and 48 labeled
+prior origins per horizon. Earlier training rows can be used as examples at
+later cutoffs even when they do not themselves meet the 60-month issue gate.
 The split dates are fixed in code and do not move with the latest download.
 S10B must keep holdout labels out of candidate selection and transformation
 fitting, even though the governed target table contains them.

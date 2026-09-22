@@ -2,7 +2,12 @@ with bad_splits as (
     select origin_month
     from {{ ref('forecast_split_manifest') }}
     where
-        (origin_month < date '2024-01-01' and split_name <> 'development')
+        (origin_month < date '2020-01-01' and split_name <> 'training')
+        or (
+            origin_month >= date '2020-01-01'
+            and origin_month < date '2024-01-01'
+            and split_name <> 'development'
+        )
         or (origin_month >= date '2024-01-01' and split_name <> 'holdout')
         or evaluation_mode <> 'retrospective_current_vintage'
         or minimum_observed_history_months <> 60

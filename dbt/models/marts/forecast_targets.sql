@@ -37,7 +37,7 @@ left join cocoa as future_price
         = cast(split.origin_month + horizons.horizon_months * interval 1 month as date)
 left join cocoa as past_origin
     on
-        past_origin.month_key >= date '2015-01-01'
+        past_origin.month_key >= date '2016-01-01'
         and split.origin_month > past_origin.month_key
 left join cocoa as past_target
     on

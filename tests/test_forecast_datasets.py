@@ -129,7 +129,7 @@ def test_forecast_lags_labels_splits_and_vintages(tmp_path):
             "select source_update_date, first_seen_capture_at_utc "
             "from forecast_capture_metadata where source_capture_id = 'capture-b'"
         ).fetchone()
-    assert split == [("development", 48), ("holdout", 24)]
+    assert split == [("development", 48), ("holdout", 24), ("training", 48)]
     assert feature == (
         Decimal(109),
         None,
@@ -143,6 +143,12 @@ def test_forecast_lags_labels_splits_and_vintages(tmp_path):
         (1, date(2024, 2, 1), Decimal(999), "capture-b"),
         (3, date(2024, 4, 1), Decimal(777), "capture-c"),
     ]
+    with duckdb.connect(str(database), read_only=True) as connection:
+        early = connection.execute(
+            "select horizon_months, labeled_training_origins from forecast_targets "
+            "where origin_month = date '2020-01-01' order by horizon_months"
+        ).fetchall()
+    assert early == [(1, 48), (3, 46)]
     assert all("target" not in column for column in columns)
     assert capture[0] == date(2026, 8, 14)
     assert capture[1].year == 2026
