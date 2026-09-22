@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+pip install --no-cache-dir uv==0.12.11
+uv export --locked --no-hashes --no-default-groups --group notebooks \
+  | uv pip install --system --no-cache -r -

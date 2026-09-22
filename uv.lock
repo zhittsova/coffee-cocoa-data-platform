@@ -346,6 +346,7 @@ notebooks = [
     { name = "ipykernel" },
     { name = "jupyterlab" },
     { name = "matplotlib" },
+    { name = "numpy" },
 ]
 
 [package.metadata]
@@ -375,6 +376,7 @@ notebooks = [
     { name = "ipykernel", specifier = ">=6,<8" },
     { name = "jupyterlab", specifier = ">=4,<5" },
     { name = "matplotlib", specifier = ">=3.9,<4" },
+    { name = "numpy", specifier = ">=2,<3" },
 ]
 
 [[package]]

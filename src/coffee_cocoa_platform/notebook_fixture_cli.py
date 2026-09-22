@@ -64,7 +64,8 @@ def _presentation_workbook() -> bytes:
     return output.getvalue()
 
 
-def _build_fixture(root: Path) -> str:
+def build_notebook_fixture(root: Path) -> str:
+    """Build and publish the synthetic snapshots consumed by the notebook."""
     paths = ProjectPaths.from_root(root)
     if any(
         path.exists()
@@ -210,7 +211,7 @@ def main() -> None:
     if any(root.iterdir()):
         raise SystemExit(f"Choose an empty fixture root: {root}")
 
-    snapshot_summary = _build_fixture(root)
+    snapshot_summary = build_notebook_fixture(root)
     executed_notebook = _execute_notebook(root)
     print(snapshot_summary)
     print(f"Executed notebook: {executed_notebook}")

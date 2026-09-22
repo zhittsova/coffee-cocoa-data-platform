@@ -89,6 +89,9 @@ pushes and deletion. There is no required self-approval for the solo maintainer.
 
 ## Notebook presentation
 
+[![Launch on Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/zhittsova/coffee-cocoa-data-platform/main?labpath=notebooks/coffee-cocoa-presentation.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zhittsova/coffee-cocoa-data-platform/blob/main/notebooks/coffee-cocoa-presentation.ipynb)
+
 [The presentation notebook](notebooks/coffee-cocoa-presentation.ipynb) reads a
 published snapshot and presents dbt benchmark, trade and forecast outputs. To
 build a synthetic snapshot and execute it in a fresh kernel, use an empty
@@ -100,3 +103,7 @@ uv run --locked --group notebooks python -m coffee_cocoa_platform.notebook_fixtu
 ```
 
 The executed copy is saved under `FIXTURE_ROOT`; fixture values are synthetic.
+Binder installs the locked notebook group at launch. Colab clones this public
+repository and installs the same optional group from the notebook's first cell.
+On either service, run all cells to build the synthetic snapshot before the
+notebook reads it. No source credentials or real source data are used.
