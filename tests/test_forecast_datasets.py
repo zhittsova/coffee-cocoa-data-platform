@@ -41,6 +41,17 @@ def synthetic_prices(root):
                     "source_status": None,
                 }
             )
+    rows.append(
+        {
+            "source_dataset": "other_price_source",
+            "series_id": "cocoa",
+            "period_month": date(2024, 1, 1),
+            "source_value_text": "1234",
+            "price_usd_per_kg": Decimal(1234),
+            "source_capture_id": "unrelated-capture",
+            "source_status": None,
+        }
+    )
     path = directory / "benchmark_prices.parquet"
     pq.write_table(pa.Table.from_pylist(rows, PRICE_SCHEMA), path)
     captures = {

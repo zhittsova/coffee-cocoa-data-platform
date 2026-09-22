@@ -6,7 +6,9 @@ with cocoa as (
         price_usd_per_kg,
         source_capture_id
     from {{ ref('fct_benchmark_prices') }}
-    where benchmark_series = 'cocoa'
+    where
+        source_dataset = 'world_bank_pink_sheet_monthly'
+        and benchmark_series = 'cocoa'
 ),
 
 origins as (
