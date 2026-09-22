@@ -86,11 +86,10 @@ record under `.state/replacements/`; retrying the request starts from the last
 published state. The published `_revision_history` identifies the authoritative
 run even if a process stops immediately after publication.
 
-Replacement calls use an exclusive local lock. Run them serially and do not point
-another warehouse writer at the replacement root. Standalone source assets reject
-replacement-managed roots.
-Cross-command writer coordination, reader snapshot management, retention and
-power-loss recovery remain separate operational work. This boundary handles
+Replacement, standalone source, direct dbt and catalog commands share the
+[local writer protocol](007-runtime-controls.md). Standalone source assets reject
+replacement-managed roots. Reader snapshots, retention and power-loss recovery
+remain separate operational work. This boundary handles
 process/build failures; it does not claim power-loss durability or reduced total
 warehouse I/O. Its benefit is bounded staging transformation with correct source
 withdrawals; candidate copies and downstream rebuilds are deliberate local costs.

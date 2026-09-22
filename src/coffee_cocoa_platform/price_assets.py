@@ -5,11 +5,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from dagster import (
+    AssetCheckResult,
+    AssetCheckSpec,
     AssetExecutionContext,
     AssetKey,
     Definitions,
     MaterializeResult,
+    MetadataValue,
     asset,
+    in_process_executor,
 )
 from dagster_dbt import DbtCliResource, dbt_assets
 
@@ -25,16 +29,40 @@ from coffee_cocoa_platform.catalog_metadata import (
 from coffee_cocoa_platform.paths import ProjectPaths
 from coffee_cocoa_platform.price_fixture import synthetic_workbook
 from coffee_cocoa_platform.prices import SOURCE_URL, fetch_workbook, publish_workbook
+from coffee_cocoa_platform.refresh import refresh_status
+from coffee_cocoa_platform.runtime import (
+    coordinated_run,
+    local_writer,
+    require_in_process,
+    run_instance,
+    stream_dbt,
+)
 
 
 @asset(
+    required_resource_keys={"writer"},
+    check_specs=[
+        AssetCheckSpec(
+            "source_validated", asset=AssetKey(["world_bank_prices", "monthly_prices"])
+        )
+    ],
     key=AssetKey(["world_bank_prices", "monthly_prices"]),
     config_schema={"mode": str, "start": str, "end": str},
     description=source_asset_description("world_bank_prices", "monthly_prices"),
     owners=source_asset_owners("world_bank_prices", "monthly_prices"),
     metadata=source_asset_metadata("world_bank_prices", "monthly_prices"),
 )
-def monthly_prices(context: AssetExecutionContext) -> MaterializeResult:
+def monthly_prices(context: AssetExecutionContext):
+    try:
+        result = _capture(context)
+    except Exception:
+        yield AssetCheckResult(passed=False, check_name="source_validated")
+        raise
+    yield result
+
+
+def _capture(context):
+    require_in_process(context)
     config = context.op_config
     paths = ProjectPaths.from_root()
     paths.require_capture_root()
@@ -59,7 +87,9 @@ def monthly_prices(context: AssetExecutionContext) -> MaterializeResult:
         content_type=content_type,
     )
     return MaterializeResult(
+        check_results=[AssetCheckResult(passed=True, check_name="source_validated")],
         metadata={
+            "refresh_status": MetadataValue.json(refresh_status(manifest)),
             "row_count": manifest["row_count"],
             "observed_row_count": manifest["observed_row_count"],
             "sha256": manifest["sha256"],
@@ -69,49 +99,59 @@ def monthly_prices(context: AssetExecutionContext) -> MaterializeResult:
             "source_capture_id": manifest["source_capture_id"],
             "source_url": manifest["source_url"],
             "retrieved_at_utc": manifest["retrieved_at_utc"],
-        }
+        },
     )
 
 
 @dbt_assets(
+    required_resource_keys={"writer"},
     manifest=ensure_manifest(),
     project=DBT_PROJECT,
     select="+stg_benchmark_prices+",
     dagster_dbt_translator=GovernedDbtTranslator(),
 )
-def benchmark_dbt(context: AssetExecutionContext, dbt: DbtCliResource):
-    yield from dbt.cli(["build"], context=context).stream()
+def benchmark_dbt(context: AssetExecutionContext):
+    yield from stream_dbt(context, "+stg_benchmark_prices+")
 
 
 defs = Definitions(
+    executor=in_process_executor,
     assets=[monthly_prices, benchmark_dbt],
-    resources={"dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR)},
+    resources={
+        "dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR),
+        "writer": local_writer,
+    },
 )
 
 
+@coordinated_run
 def run_assets(mode: str, start: str, end: str, root: Path) -> bool:
     """Run the same Dagster graph used by the local development UI."""
     from dagster import materialize
 
     os.environ["COFFEE_COCOA_HOME"] = str(root.resolve())
     paths = ProjectPaths.from_root(root)
-    paths.warehouse.mkdir(parents=True, exist_ok=True)
     os.environ["COFFEE_COCOA_DUCKDB_PATH"] = str(
         paths.warehouse / "coffee_cocoa.duckdb"
     )
-    result = materialize(
-        [monthly_prices, benchmark_dbt],
-        resources={"dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR)},
-        run_config={
-            "ops": {
-                "world_bank_prices__monthly_prices": {
-                    "config": {
-                        "mode": mode,
-                        "start": start,
-                        "end": end,
+    with run_instance(root) as instance:
+        result = materialize(
+            instance=instance,
+            assets=[monthly_prices, benchmark_dbt],
+            resources={
+                "dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR),
+                "writer": local_writer,
+            },
+            run_config={
+                "ops": {
+                    "world_bank_prices__monthly_prices": {
+                        "config": {
+                            "mode": mode,
+                            "start": start,
+                            "end": end,
+                        }
                     }
                 }
-            }
-        },
-    )
+            },
+        )
     return result.success

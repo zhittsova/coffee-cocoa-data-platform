@@ -167,7 +167,7 @@ def test_conflicting_duplicate_key_is_rejected():
         combine_trade_tables([table, changed])
 
 
-def test_failed_slice_requires_explicit_resume_before_publication(tmp_path):
+def test_transient_slice_recovers_within_budget_and_resume_reuses_capture(tmp_path):
     paths = ProjectPaths.from_root(tmp_path)
     profile = fixture_profile()
     calls = []
@@ -181,11 +181,9 @@ def test_failed_slice_requires_explicit_resume_before_publication(tmp_path):
             raise TimeoutError("simulated retryable timeout")
         return fixture_transport(request, max_bytes, deadline_seconds)
 
-    with pytest.raises(TradeSourceError, match="run the same plan to continue"):
-        publish_trade_profile(profile, paths, flaky, fixture=True)
-    assert not (paths.parquet / "trade_observations.parquet").exists()
-
     manifest = publish_trade_profile(profile, paths, flaky, fixture=True)
+    resumed = publish_trade_profile(profile, paths, flaky, fixture=True)
+    assert resumed["plan_hash"] == manifest["plan_hash"]
 
     assert calls == ["fixture-2021", "fixture-2022", "fixture-2022"]
     assert manifest["transport_complete"] is True

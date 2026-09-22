@@ -32,16 +32,18 @@ Generate and validate the local catalog against that fixture warehouse:
 
 ```sh
 uv run --locked python -m coffee_cocoa_platform.catalog_cli --root .
-uv run --locked dbt docs serve --project-dir dbt --profiles-dir dbt
+uv run --locked dbt docs serve --project-dir dbt --profiles-dir dbt --target-path ../.state/catalog
 ```
 
-The generated site is in `dbt/target/index.html`, with a local capture and run
-index in `dbt/target/provenance.json`. Its dbt source and model pages
+The generated site is in `.state/catalog/index.html`, with a local capture and run
+index in `.state/catalog/provenance.json`. Its dbt source and model pages
 show typed columns, ownership, grain, source terms and lineage. Dagster's source
 asset pages use the same dbt source definitions. Capture IDs in the facts resolve
 through the local JSON manifests, or the revision registry after replacement.
 Catalog classification describes data handling; it does not grant access or
-enforce permissions. No scheduled refresh or freshness SLA is configured.
+enforce permissions. Refreshes remain manual; no freshness SLA is configured.
+See [runtime controls](design/features/007-runtime-controls.md) for writer locking,
+selected backfills, persistent Dagster history and the disabled fixture schedule.
 
 To fetch the World Bank workbook explicitly, choose an inclusive range:
 
@@ -49,8 +51,8 @@ To fetch the World Bank workbook explicitly, choose an inclusive range:
 uv run --locked python -m coffee_cocoa_platform.price_cli --mode live --start 2015-01 --end 2026-08 --root .
 ```
 
-The live adapter downloads the workbook once with a 2 MiB response limit and
-retains its original bytes under `data/raw/`. Both commands use
+The live adapter allows three bounded transport attempts within a shared 2 MiB
+allowance and retains its original bytes under `data/raw/`. Both commands use
 `COFFEE_COCOA_HOME` as the data root. Real captures and derived files stay local.
 The source is [World Bank Commodity Price Data (Pink Sheet)](https://www.worldbank.org/en/research/commodity-markets);
 the selected series have ICCO and ICO inputs. The pipeline selects those series,

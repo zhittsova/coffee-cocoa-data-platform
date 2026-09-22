@@ -23,11 +23,11 @@ its root:
 ```sh
 uv run --locked python -m coffee_cocoa_platform.pipeline_cli --root data/catalog-fixture
 uv run --locked python -m coffee_cocoa_platform.catalog_cli --root data/catalog-fixture
-uv run --locked dbt docs serve --project-dir dbt --profiles-dir dbt
+uv run --locked dbt docs serve --project-dir dbt --profiles-dir dbt --target-path ../data/catalog-fixture/.state/catalog
 ```
 
-The generator writes ignored `dbt/target/index.html`, `manifest.json`,
-`catalog.json` and `provenance.json`. The provenance index resolves fact capture
+Under the selected root, the generator writes ignored `.state/catalog/index.html`,
+`manifest.json`, `catalog.json` and `provenance.json`. The provenance index resolves fact capture
 IDs to local manifests and records the latest replacement run ID when available.
 It adds physical external Parquet column types to the generated catalog because
 dbt-duckdb does not introspect those sources into `catalog.json`.

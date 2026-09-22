@@ -7,7 +7,6 @@ import sys
 from datetime import date
 from decimal import Decimal
 from itertools import pairwise
-from pathlib import Path
 
 import duckdb
 import pytest
@@ -78,9 +77,9 @@ def test_two_source_fixture_pipeline(tmp_path):
             "select count(*) from metric_dictionary"
         ).fetchone()[0]
 
-        manifest = json.loads(
-            (Path(__file__).parents[1] / "dbt/target/manifest.json").read_text()
-        )
+        manifests = sorted((tmp_path / ".state/dbt").glob("*/manifest.json"))
+        assert len(manifests) == 2
+        manifest = json.loads(manifests[0].read_text())
         public_nodes = [
             node
             for node in manifest["nodes"].values()
@@ -261,7 +260,7 @@ def test_combined_definitions_import_without_io(tmp_path):
             (
                 "from coffee_cocoa_platform.platform_assets import defs; "
                 "g=defs.resolve_asset_graph(); "
-                "assert len(g.get_all_asset_keys()) == 19; "
+                "assert len(g.get_all_asset_keys()) == 20; "
                 "assert any(str(k) == \"AssetKey(['eurostat_trade', 'monthly_trade'])\" "
                 "for k in g.get_all_asset_keys()); "
                 "assert any(str(k) == \"AssetKey(['monthly_partner_concentration'])\" "

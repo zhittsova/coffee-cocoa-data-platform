@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import os
 import shutil
-import subprocess
-import sys
 import tempfile
 import uuid
 from datetime import UTC, datetime
@@ -21,6 +18,7 @@ import pyarrow.parquet as pq
 from coffee_cocoa_platform.paths import ProjectPaths
 from coffee_cocoa_platform.prices import PRICE_SCHEMA, SERIES, parse_workbook
 from coffee_cocoa_platform.prices import _month as price_month
+from coffee_cocoa_platform.runtime import run_dbt, writer_lock
 from coffee_cocoa_platform.trades import (
     FLOWS,
     PRODUCT_GROUPS,
@@ -234,7 +232,6 @@ def _record_capture(captures: dict, event: dict, selected_at: str) -> None:
 
 def _dbt_build(candidate: ProjectPaths, scopes: dict, full_refresh: bool) -> None:
     command = [
-        str(Path(sys.executable).with_name("dbt")),
         "build",
         "--project-dir",
         str(DBT_DIR),
@@ -249,18 +246,7 @@ def _dbt_build(candidate: ProjectPaths, scopes: dict, full_refresh: bool) -> Non
     ]
     if full_refresh:
         command.append("--full-refresh")
-    result = subprocess.run(
-        command,
-        env=dict(
-            os.environ,
-            COFFEE_COCOA_HOME=str(candidate.root),
-            COFFEE_COCOA_DUCKDB_PATH=str(candidate.warehouse / "coffee_cocoa.duckdb"),
-        ),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=480,
-    )
+    result = run_dbt(candidate.root, command)
     (candidate.root / "dbt-build.log").write_text(result.stdout + result.stderr)
     if result.returncode:
         raise RevisionError(f"dbt build failed; see {candidate.root / 'dbt-build.log'}")
@@ -273,13 +259,7 @@ def run_replacement(root: Path, request: dict, *, full_refresh: bool = False) ->
         {"prices", "trade"} & request.keys()
     ):
         raise RevisionError("A version 1 request with a source selection is required")
-    paths.state.mkdir(parents=True, exist_ok=True)
-    # Fail fast on another replacement; the broader writer protocol belongs to runtime controls.
-    with (paths.state / "replacement.lock").open("a") as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as exc:
-            raise RevisionError("Another replacement is running") from exc
+    with writer_lock(paths.root):
         return _run_locked(paths, request, full_refresh)
 
 

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from coffee_cocoa_platform.revision_job import source_replacement_job
+from coffee_cocoa_platform.runtime import run_instance
 
 
 def main() -> None:
@@ -13,19 +14,21 @@ def main() -> None:
     parser.add_argument("--request", type=Path, required=True)
     parser.add_argument("--full-refresh", action="store_true")
     args = parser.parse_args()
-    result = source_replacement_job.execute_in_process(
-        run_config={
-            "ops": {
-                "replace_source_partitions": {
-                    "config": {
-                        "root": str(args.root.resolve()),
-                        "request": json.loads(args.request.read_text()),
-                        "full_refresh": args.full_refresh,
+    with run_instance(args.root) as instance:
+        result = source_replacement_job.execute_in_process(
+            instance=instance,
+            run_config={
+                "ops": {
+                    "replace_source_partitions": {
+                        "config": {
+                            "root": str(args.root.resolve()),
+                            "request": json.loads(args.request.read_text()),
+                            "full_refresh": args.full_refresh,
+                        }
                     }
                 }
-            }
-        }
-    )
+            },
+        )
     print(json.dumps(result.output_for_node("replace_source_partitions"), indent=2))
 
 

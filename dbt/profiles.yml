@@ -5,3 +5,5 @@ coffee_cocoa:
       type: duckdb
       path: "{{ env_var('COFFEE_COCOA_DUCKDB_PATH', ':memory:') }}"
       threads: 2
+      plugins:
+        - module: coffee_cocoa_platform.dbt_guard
