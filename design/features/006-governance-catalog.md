@@ -9,9 +9,10 @@ seed schemas are checked against those declarations by the catalog validator.
 Existing dbt data tests cover semantic constraints that DuckDB contracts do not
 enforce. Classification is descriptive metadata, not access control.
 
-Dagster reads the dbt source declarations for its two raw asset schemas and
-discovery fields. A dbt translator carries model metadata into Dagster's lineage
-graph. Materializations record the local source manifest path and capture identity.
+Dagster reads the dbt source declarations for its two raw asset descriptions,
+owners, schemas and discovery fields. A dbt translator carries model metadata
+into Dagster's lineage graph. Materializations record the local source manifest
+path and capture identity.
 The two capture manifests record the source version, retrieval and source URL.
 Replacement warehouses retain selected capture identities in `_revision_state`
 and archived manifests under `.state/capture_manifests/`.

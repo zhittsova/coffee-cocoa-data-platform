@@ -46,6 +46,10 @@ def source_asset_owners(source_name: str, table_name: str) -> list[str]:
     return [f"team:{table['config']['meta']['owner']}"]
 
 
+def source_asset_description(source_name: str, table_name: str) -> str:
+    return source_table_definition(source_name, table_name)["description"]
+
+
 def source_asset_metadata(source_name: str, table_name: str) -> dict:
     table = source_table_definition(source_name, table_name)
     meta = table["config"]["meta"]

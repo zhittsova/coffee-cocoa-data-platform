@@ -18,6 +18,7 @@ from coffee_cocoa_platform.catalog_metadata import (
     DBT_PROJECT,
     GovernedDbtTranslator,
     ensure_manifest,
+    source_asset_description,
     source_asset_metadata,
     source_asset_owners,
 )
@@ -35,7 +36,7 @@ from coffee_cocoa_platform.trades import make_profile, publish_trade_profile
         "end": str,
         "capture_vintage": Field(str, default_value="initial"),
     },
-    description="Complete a bounded Eurostat plan and publish typed trade Parquet.",
+    description=source_asset_description("eurostat_trade", "monthly_trade"),
     owners=source_asset_owners("eurostat_trade", "monthly_trade"),
     metadata=source_asset_metadata("eurostat_trade", "monthly_trade"),
 )

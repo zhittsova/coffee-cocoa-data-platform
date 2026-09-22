@@ -18,6 +18,7 @@ from coffee_cocoa_platform.catalog_metadata import (
     DBT_PROJECT,
     GovernedDbtTranslator,
     ensure_manifest,
+    source_asset_description,
     source_asset_metadata,
     source_asset_owners,
 )
@@ -29,7 +30,7 @@ from coffee_cocoa_platform.prices import SOURCE_URL, fetch_workbook, publish_wor
 @asset(
     key=AssetKey(["world_bank_prices", "monthly_prices"]),
     config_schema={"mode": str, "start": str, "end": str},
-    description="Validate one bounded workbook capture and publish typed monthly Parquet.",
+    description=source_asset_description("world_bank_prices", "monthly_prices"),
     owners=source_asset_owners("world_bank_prices", "monthly_prices"),
     metadata=source_asset_metadata("world_bank_prices", "monthly_prices"),
 )

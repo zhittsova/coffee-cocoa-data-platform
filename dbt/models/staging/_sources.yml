@@ -4,7 +4,7 @@ sources:
   description: World Bank Commodity Price Data monthly workbook, selected benchmark cells in USD/kg.
   tables:
   - name: monthly_prices
-    description: One selected series and reference month per captured workbook.
+    description: Validated monthly benchmark prices from a captured World Bank workbook, at series and reference-month grain.
     config:
       external_location: '{{ env_var(''COFFEE_COCOA_HOME'', ''.'') }}/data/parquet/benchmark_prices.parquet'
       meta:
@@ -65,7 +65,7 @@ sources:
   description: Eurostat Comext DS-045409 monthly German trade cells in source units.
   tables:
   - name: monthly_trade
-    description: Represented source cells at partner, CN8 product, flow, indicator and month grain.
+    description: Validated Eurostat trade cells in typed Parquet, at partner, CN8 leaf, flow, indicator and reference-month grain.
     config:
       external_location: '{{ env_var(''COFFEE_COCOA_HOME'', ''.'') }}/data/parquet/trade_observations.parquet'
       meta:

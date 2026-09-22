@@ -9,6 +9,7 @@ from dagster import AssetKey
 from coffee_cocoa_platform.catalog_cli import definition_errors
 from coffee_cocoa_platform.catalog_metadata import (
     ensure_manifest,
+    source_asset_description,
     source_asset_metadata,
     source_asset_owners,
 )
@@ -37,6 +38,9 @@ def test_dagster_source_metadata_comes_from_dbt_source_definition():
         "team:data-platform"
     ]
     assert metadata["grain"]
+    assert source_asset_description("eurostat_trade", "monthly_trade").startswith(
+        "Validated Eurostat trade cells"
+    )
     assert metadata["license_url"].startswith("https://ec.europa.eu/")
     columns = metadata["dagster/column_schema"].columns
     assert {column.name for column in columns} >= {
