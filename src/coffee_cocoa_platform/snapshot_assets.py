@@ -11,6 +11,9 @@ from coffee_cocoa_platform.snapshots import publish_snapshot
     deps=[
         AssetKey("monthly_benchmark_dynamics"),
         AssetKey("monthly_trade_product_metrics"),
+        AssetKey("forecast_origin_features"),
+        AssetKey("forecast_targets"),
+        AssetKey("forecast_capture_metadata"),
     ],
     description="Immutable read snapshot published after the complete fixture dbt build and tests pass.",
 )

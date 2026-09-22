@@ -272,9 +272,31 @@ def test_complete_fixture_build_publishes_while_prior_reader_stays_open(
         expected = connection.execute(
             "select count(*) from fct_trade_observations"
         ).fetchone()
+        source_facts = connection.execute(
+            "select month_key, price_usd_per_kg, source_capture_id "
+            "from fct_benchmark_prices where benchmark_series = 'cocoa' "
+            "order by month_key"
+        ).fetchall()
+        features = connection.execute(
+            "select origin_month, lag_0_usd_per_kg, lag_1_usd_per_kg, "
+            "lag_3_usd_per_kg, lag_12_usd_per_kg "
+            "from forecast_origin_features order by origin_month"
+        ).fetchall()
 
     with open_snapshot(tmp_path) as first_reader:
         first_id = first_reader.snapshot_id
+        assert (
+            "forecast_origin_features"
+            in first_reader.manifest["warehouse"]["table_names"]
+        )
+        assert (
+            first_reader.connection.execute(
+                "select origin_month, lag_0_usd_per_kg, lag_1_usd_per_kg, "
+                "lag_3_usd_per_kg, lag_12_usd_per_kg "
+                "from forecast_origin_features order by origin_month"
+            ).fetchall()
+            == features
+        )
         assert (
             first_reader.connection.execute(
                 "select count(*) from fct_trade_observations"
@@ -291,6 +313,22 @@ def test_complete_fixture_build_publishes_while_prior_reader_stays_open(
         )
         with open_snapshot(tmp_path) as second_reader:
             assert second_reader.snapshot_id != first_id
+            assert (
+                second_reader.connection.execute(
+                    "select origin_month, lag_0_usd_per_kg, lag_1_usd_per_kg, "
+                    "lag_3_usd_per_kg, lag_12_usd_per_kg "
+                    "from forecast_origin_features order by origin_month"
+                ).fetchall()
+                == features
+            )
+            assert (
+                second_reader.connection.execute(
+                    "select month_key, price_usd_per_kg, source_capture_id "
+                    "from fct_benchmark_prices where benchmark_series = 'cocoa' "
+                    "order by month_key"
+                ).fetchall()
+                == source_facts
+            )
             assert (
                 second_reader.connection.execute(
                     "select count(*) from fct_trade_observations"

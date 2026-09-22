@@ -2,8 +2,8 @@
 
 Status: the World Bank price path, bounded Eurostat trade staging path, dbt
 domain models, bounded source replacements, shared writer controls and immutable
-read snapshots run locally. Forecasting, recovery and deployment controls below
-remain planned.
+read snapshots run locally. Forecast datasets are defined; fitting, recovery and
+deployment controls remain planned.
 
 ## Responsibilities
 
@@ -24,8 +24,8 @@ into validated observations with source codes, missingness and provenance. The
 trade capture completes a fixed set of year/product slices before replacing the
 current Parquet file. dbt assigns product groups, partner classes, units and the
 documented CN comparability segment. It publishes conformed dimensions, separate
-benchmark and trade facts, and monthly metrics with explicit coverage. Later
-models build forecast datasets. Publish a consistent read snapshot only after
+benchmark and trade facts, and monthly metrics with explicit coverage. dbt
+builds forecast datasets. Publish a consistent read snapshot only after
 the required checks pass.
 
 These boundaries correspond to raw, standardized and business layers, often

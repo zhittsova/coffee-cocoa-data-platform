@@ -38,6 +38,10 @@ from coffee_cocoa_platform.runtime import (
     stream_dbt,
 )
 
+BENCHMARK_DBT_SELECTION = (
+    "+stg_benchmark_prices+ forecast_split_manifest+ forecast_capture_metadata+"
+)
+
 
 @asset(
     required_resource_keys={"writer"},
@@ -107,11 +111,11 @@ def _capture(context):
     required_resource_keys={"writer"},
     manifest=ensure_manifest(),
     project=DBT_PROJECT,
-    select="+stg_benchmark_prices+",
+    select=BENCHMARK_DBT_SELECTION,
     dagster_dbt_translator=GovernedDbtTranslator(),
 )
 def benchmark_dbt(context: AssetExecutionContext):
-    yield from stream_dbt(context, "+stg_benchmark_prices+")
+    yield from stream_dbt(context, BENCHMARK_DBT_SELECTION)
 
 
 defs = Definitions(

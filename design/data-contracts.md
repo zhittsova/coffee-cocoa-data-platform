@@ -231,9 +231,14 @@ Confirmed: offline synthetic fixtures are the default; live downloads require an
 explicit command. The first forecast target is the monthly World Bank cocoa
 benchmark in nominal USD/kg at one- and three-month horizons.
 
-Before forecast implementation, freeze minimum training history, development
-origins, untouched holdout, availability assumptions, metrics and interval policy.
-Compare persistence and seasonal-naive baselines with one specified candidate.
+The [forecast dataset contract](features/009-forecast-datasets.md) fixes the
+development and holdout origins, minimum history, capture provenance and
+retrospective availability mode. dbt publishes separate features and labels
+through the tested read snapshot. Historical as-of evaluation remains gated
+on verified release and capture evidence.
+
+Before forecast fitting, freeze metrics and interval policy. Compare persistence
+and seasonal-naive baselines with one specified candidate.
 Fit transformations and choose the candidate inside development folds only.
 Current-vintage backtests are retrospective; historical release availability was
 not reconstructed. Trade features remain excluded from as-of forecasts until their

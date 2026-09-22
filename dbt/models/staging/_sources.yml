@@ -61,6 +61,46 @@ sources:
       data_type: varchar
       meta:
         unit: none
+  - name: forecast_capture_metadata
+    description: Validated capture-level provenance for selected benchmark observations.
+    config:
+      external_location: '{{ env_var(''COFFEE_COCOA_HOME'', ''.'') }}/data/parquet/forecast_capture_metadata.parquet'
+      meta:
+        owner: data-platform
+        grain: one row per selected source capture ID
+        origin: World Bank workbook capture manifest and local revision registry
+        classification: local capture provenance
+        provenance: data/parquet/benchmark_prices.json or _revision_state
+        license: World Bank dataset terms; real-observation redistribution is unresolved
+        refresh_expectation: Manual fixture build or explicit capture/replacement
+        license_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+        origin_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+    columns:
+    - name: source_capture_id
+      description: Raw workbook SHA-256.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: source_update_text
+      description: Publisher workbook update label, not a cell release date.
+      data_type: varchar
+      meta:
+        unit: none
+    - name: source_update_date
+      description: Parsed publisher update date when the label is recognized.
+      data_type: date
+      meta:
+        unit: calendar date
+    - name: retrieved_at_utc
+      description: Time this copy was retrieved locally.
+      data_type: timestamp with time zone
+      meta:
+        unit: UTC timestamp
+    - name: first_seen_capture_at_utc
+      description: Earliest recorded local capture of these bytes, not historical publication.
+      data_type: timestamp with time zone
+      meta:
+        unit: UTC timestamp
 - name: eurostat_trade
   description: Eurostat Comext DS-045409 monthly German trade cells in source units.
   tables:

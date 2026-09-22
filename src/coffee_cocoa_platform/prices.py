@@ -59,6 +59,65 @@ PRICE_SCHEMA = pa.schema(
     ]
 )
 
+FORECAST_CAPTURE_SCHEMA = pa.schema(
+    [
+        pa.field("source_capture_id", pa.string(), nullable=False),
+        pa.field("source_update_text", pa.string()),
+        pa.field("source_update_date", pa.date32()),
+        pa.field("retrieved_at_utc", pa.timestamp("us", tz="UTC"), nullable=False),
+        pa.field(
+            "first_seen_capture_at_utc", pa.timestamp("us", tz="UTC"), nullable=False
+        ),
+    ]
+)
+
+
+def write_forecast_capture_metadata(directory: Path, captures: dict) -> None:
+    """Publish capture provenance separately from immutable price observations."""
+    output = directory / "forecast_capture_metadata.parquet"
+    previously_seen = {}
+    if output.exists():
+        previous = pq.read_table(output, schema=FORECAST_CAPTURE_SCHEMA)
+        previously_seen = {
+            row["source_capture_id"]: row["first_seen_capture_at_utc"]
+            for row in previous.to_pylist()
+        }
+    rows = []
+    for capture_id, record in sorted(captures.items()):
+        retrieved = datetime.fromisoformat(record["retrieved_at_utc"])
+        first_seen = datetime.fromisoformat(record["first_seen_capture_at_utc"])
+        if retrieved.tzinfo is None or first_seen.tzinfo is None:
+            raise PriceSourceError("Capture timestamps must have timezones")
+        if capture_id in previously_seen:
+            first_seen = min(first_seen, previously_seen[capture_id])
+        update_text = record.get("source_update")
+        update_date = _update_date(update_text) if update_text else None
+        rows.append(
+            {
+                "source_capture_id": capture_id,
+                "source_update_text": update_text,
+                "source_update_date": date.fromisoformat(update_date)
+                if update_date
+                else None,
+                "retrieved_at_utc": retrieved.astimezone(UTC),
+                "first_seen_capture_at_utc": first_seen.astimezone(UTC),
+            }
+        )
+    directory.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        dir=directory, suffix=".parquet", delete=False
+    ) as tmp:
+        staged = Path(tmp.name)
+    try:
+        pq.write_table(
+            pa.Table.from_pylist(rows, schema=FORECAST_CAPTURE_SCHEMA),
+            staged,
+            compression="zstd",
+        )
+        os.replace(staged, output)
+    finally:
+        staged.unlink(missing_ok=True)
+
 
 class PriceSourceError(ValueError):
     """The capture cannot be trusted for publication."""
@@ -389,4 +448,14 @@ def publish_workbook(
         json.dump(manifest, tmp, indent=2, sort_keys=True)
         staged_manifest = Path(tmp.name)
     os.replace(staged_manifest, manifest_path)
+    write_forecast_capture_metadata(
+        paths.parquet,
+        {
+            checksum: {
+                "retrieved_at_utc": manifest["retrieved_at_utc"],
+                "first_seen_capture_at_utc": manifest["retrieved_at_utc"],
+                "source_update": manifest["source_update_text"],
+            }
+        },
+    )
     return manifest
