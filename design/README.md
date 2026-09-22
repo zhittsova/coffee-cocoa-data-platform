@@ -56,6 +56,7 @@ support verification; generated code or tests alone do not establish correctness
 - [Local runtime controls](features/007-runtime-controls.md)
 - [Consistent read snapshots](features/008-read-snapshots.md)
 - [Cocoa forecast datasets](features/009-forecast-datasets.md)
+- [Cocoa forecast evaluation](features/010-forecast-evaluation.md)
 
 Offline fixtures are the confirmed default. The first forecast targets monthly
 cocoa USD/kg at one- and three-month horizons. Its fixed evaluation splits and
