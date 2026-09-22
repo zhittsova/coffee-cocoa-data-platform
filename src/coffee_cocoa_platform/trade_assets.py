@@ -11,15 +11,19 @@ from dagster import (
     MaterializeResult,
     asset,
 )
-from dagster_dbt import DbtCliResource, DbtProject, dbt_assets
+from dagster_dbt import DbtCliResource, dbt_assets
 
+from coffee_cocoa_platform.catalog_metadata import (
+    DBT_DIR,
+    DBT_PROJECT,
+    GovernedDbtTranslator,
+    ensure_manifest,
+    source_asset_metadata,
+    source_asset_owners,
+)
 from coffee_cocoa_platform.paths import ProjectPaths
 from coffee_cocoa_platform.trade_fixture import fixture_profile, fixture_transport
 from coffee_cocoa_platform.trades import make_profile, publish_trade_profile
-
-DBT_DIR = Path(__file__).resolve().parents[2] / "dbt"
-MANIFEST = DBT_DIR / "manifest.json"
-DBT_PROJECT = DbtProject(project_dir=DBT_DIR, profiles_dir=DBT_DIR)
 
 
 @asset(
@@ -32,6 +36,8 @@ DBT_PROJECT = DbtProject(project_dir=DBT_DIR, profiles_dir=DBT_DIR)
         "capture_vintage": Field(str, default_value="initial"),
     },
     description="Complete a bounded Eurostat plan and publish typed trade Parquet.",
+    owners=source_asset_owners("eurostat_trade", "monthly_trade"),
+    metadata=source_asset_metadata("eurostat_trade", "monthly_trade"),
 )
 def monthly_trade(context: AssetExecutionContext) -> MaterializeResult:
     config = context.op_config
@@ -61,11 +67,22 @@ def monthly_trade(context: AssetExecutionContext) -> MaterializeResult:
             "total_payload_bytes": manifest["total_payload_bytes"],
             "transport_complete": manifest["transport_complete"],
             "parquet_path": manifest["parquet_path"],
+            "manifest_path": str(paths.parquet / "trade_observations.json"),
+            "plan_hash": manifest["plan_hash"],
+            "capture_vintage": manifest["capture_vintage"],
+            "source_capture_ids": [
+                item["capture"]["sha256"] for item in manifest["slices"]
+            ],
         }
     )
 
 
-@dbt_assets(manifest=MANIFEST, project=DBT_PROJECT, select="+stg_trade_observations+")
+@dbt_assets(
+    manifest=ensure_manifest(),
+    project=DBT_PROJECT,
+    select="+stg_trade_observations+",
+    dagster_dbt_translator=GovernedDbtTranslator(),
+)
 def trade_dbt(context: AssetExecutionContext, dbt: DbtCliResource):
     yield from dbt.cli(["build"], context=context).stream()
 

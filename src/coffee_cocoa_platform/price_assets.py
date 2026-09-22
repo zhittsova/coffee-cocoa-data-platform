@@ -11,21 +11,27 @@ from dagster import (
     MaterializeResult,
     asset,
 )
-from dagster_dbt import DbtCliResource, DbtProject, dbt_assets
+from dagster_dbt import DbtCliResource, dbt_assets
 
+from coffee_cocoa_platform.catalog_metadata import (
+    DBT_DIR,
+    DBT_PROJECT,
+    GovernedDbtTranslator,
+    ensure_manifest,
+    source_asset_metadata,
+    source_asset_owners,
+)
 from coffee_cocoa_platform.paths import ProjectPaths
 from coffee_cocoa_platform.price_fixture import synthetic_workbook
 from coffee_cocoa_platform.prices import SOURCE_URL, fetch_workbook, publish_workbook
-
-DBT_DIR = Path(__file__).resolve().parents[2] / "dbt"
-MANIFEST = DBT_DIR / "manifest.json"
-DBT_PROJECT = DbtProject(project_dir=DBT_DIR, profiles_dir=DBT_DIR)
 
 
 @asset(
     key=AssetKey(["world_bank_prices", "monthly_prices"]),
     config_schema={"mode": str, "start": str, "end": str},
     description="Validate one bounded workbook capture and publish typed monthly Parquet.",
+    owners=source_asset_owners("world_bank_prices", "monthly_prices"),
+    metadata=source_asset_metadata("world_bank_prices", "monthly_prices"),
 )
 def monthly_prices(context: AssetExecutionContext) -> MaterializeResult:
     config = context.op_config
@@ -58,11 +64,20 @@ def monthly_prices(context: AssetExecutionContext) -> MaterializeResult:
             "sha256": manifest["sha256"],
             "latest_observed_by_series": str(manifest["latest_observed_by_series"]),
             "parquet_path": manifest["parquet_path"],
+            "manifest_path": str(paths.parquet / "benchmark_prices.json"),
+            "source_capture_id": manifest["source_capture_id"],
+            "source_url": manifest["source_url"],
+            "retrieved_at_utc": manifest["retrieved_at_utc"],
         }
     )
 
 
-@dbt_assets(manifest=MANIFEST, project=DBT_PROJECT, select="+stg_benchmark_prices+")
+@dbt_assets(
+    manifest=ensure_manifest(),
+    project=DBT_PROJECT,
+    select="+stg_benchmark_prices+",
+    dagster_dbt_translator=GovernedDbtTranslator(),
+)
 def benchmark_dbt(context: AssetExecutionContext, dbt: DbtCliResource):
     yield from dbt.cli(["build"], context=context).stream()
 
