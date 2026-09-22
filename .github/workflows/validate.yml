@@ -60,3 +60,9 @@ jobs:
         env:
           DAGSTER_DISABLE_TELEMETRY: "1"
         run: uv run --locked --extra forecast pytest -q -m integration
+      - name: Execute synthetic presentation notebook
+        env:
+          DAGSTER_DISABLE_TELEMETRY: "1"
+        run: |
+          fixture_root="$(mktemp -d)"
+          uv run --locked --group notebooks python -m coffee_cocoa_platform.notebook_fixture_cli --root "$fixture_root"

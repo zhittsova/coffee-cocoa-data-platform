@@ -35,6 +35,7 @@ notebooks = [
     "ipykernel>=6,<8",
     "jupyterlab>=4,<5",
     "matplotlib>=3.9,<4",
+    "numpy>=2,<3",
 ]
 
 [tool.ruff]
