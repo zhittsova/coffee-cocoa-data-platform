@@ -86,3 +86,17 @@ on the trade command when fetching a new revision of an existing request plan.
 Pull requests run the locked local checks, package smoke test and conventional
 title check. Main requires those checks, a PR and signed commits; it rejects force
 pushes and deletion. There is no required self-approval for the solo maintainer.
+
+## Notebook presentation
+
+[The presentation notebook](notebooks/coffee-cocoa-presentation.ipynb) reads a
+published snapshot and presents dbt benchmark, trade and forecast outputs. To
+build a synthetic snapshot and execute it in a fresh kernel, use an empty
+temporary directory:
+
+```sh
+FIXTURE_ROOT="$(mktemp -d /tmp/coffee-cocoa-notebook.XXXXXX)"
+uv run --locked --group notebooks python -m coffee_cocoa_platform.notebook_fixture_cli --root "$FIXTURE_ROOT"
+```
+
+The executed copy is saved under `FIXTURE_ROOT`; fixture values are synthetic.

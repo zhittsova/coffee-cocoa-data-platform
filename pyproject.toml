@@ -34,6 +34,7 @@ dev = [
 notebooks = [
     "ipykernel>=6,<8",
     "jupyterlab>=4,<5",
+    "matplotlib>=3.9,<4",
 ]
 
 [tool.ruff]
