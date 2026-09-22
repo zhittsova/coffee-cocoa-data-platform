@@ -17,6 +17,7 @@ from coffee_cocoa_platform.revisions import (
     read_selection,
     run_replacement,
 )
+from coffee_cocoa_platform.snapshots import open_snapshot
 from coffee_cocoa_platform.trade_fixture import (
     FIXTURE_PRODUCTS,
     _response,
@@ -193,9 +194,15 @@ def test_replacement_transitions_and_full_refresh(tmp_path, monkeypatch):
     a = captures(tmp_path / "A")
     b = captures(tmp_path / "B", "B")
     empty = captures(tmp_path / "empty", "empty")
-    run_replacement(root, a)
+    first_publication = run_replacement(root, a)
     original = snapshot(root)
     assert len(original["fct_trade_observations"]) == 9
+    with open_snapshot(root) as reader:
+        revision = reader.manifest["source_versions"]["revision"]
+        assert revision["run_id"] == first_publication["run_id"]
+        assert reader.connection.execute(
+            "select count(*) from fct_trade_observations"
+        ).fetchone() == (9,)
     run_replacement(root, a)
     assert snapshot(root) == original
     assert query(root, "select count(*) from _revision_history") == [(2,)]

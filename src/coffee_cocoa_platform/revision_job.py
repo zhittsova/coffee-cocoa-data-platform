@@ -20,7 +20,11 @@ def replace_source_partitions(context: OpExecutionContext) -> dict:
         Path(config["root"]), config["request"], full_refresh=config["full_refresh"]
     )
     context.add_output_metadata(
-        {"run_id": result["run_id"], "warehouse": result["warehouse"]}
+        {
+            "run_id": result["run_id"],
+            "warehouse": result["warehouse"],
+            "snapshot_id": result["snapshot"]["snapshot_id"],
+        }
     )
     return result
 

@@ -16,6 +16,7 @@ from coffee_cocoa_platform.price_assets import (
 from coffee_cocoa_platform.revision_job import source_replacement_job
 from coffee_cocoa_platform.runtime import coordinated_run, local_writer, run_instance
 from coffee_cocoa_platform.schedules import fixture_job, fixture_refresh_schedule
+from coffee_cocoa_platform.snapshot_assets import warehouse_snapshot
 from coffee_cocoa_platform.trade_assets import monthly_trade, trade_dbt
 
 defs = Definitions(
@@ -28,6 +29,7 @@ defs = Definitions(
         benchmark_dbt,
         trade_dbt,
         selected_warehouse,
+        warehouse_snapshot,
     ],
     resources={
         "dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR),
@@ -47,7 +49,13 @@ def run_fixture_assets(root: Path) -> bool:
     with run_instance(root) as instance:
         result = materialize(
             instance=instance,
-            assets=[monthly_prices, monthly_trade, benchmark_dbt, trade_dbt],
+            assets=[
+                monthly_prices,
+                monthly_trade,
+                benchmark_dbt,
+                trade_dbt,
+                warehouse_snapshot,
+            ],
             resources={
                 "dbt": DbtCliResource(project_dir=DBT_DIR, profiles_dir=DBT_DIR),
                 "writer": local_writer,

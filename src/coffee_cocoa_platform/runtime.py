@@ -27,6 +27,8 @@ def writer_lock(root: Path):
         paths.data,
         paths.raw,
         paths.parquet,
+        paths.snapshots,
+        paths.snapshots / "versions",
         paths.state,
         paths.state / "trade",
         paths.state / "replacements",

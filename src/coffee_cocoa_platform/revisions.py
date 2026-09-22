@@ -19,6 +19,7 @@ from coffee_cocoa_platform.paths import ProjectPaths
 from coffee_cocoa_platform.prices import PRICE_SCHEMA, SERIES, parse_workbook
 from coffee_cocoa_platform.prices import _month as price_month
 from coffee_cocoa_platform.runtime import run_dbt, writer_lock
+from coffee_cocoa_platform.snapshots import publish_snapshot
 from coffee_cocoa_platform.trades import (
     FLOWS,
     PRODUCT_GROUPS,
@@ -278,6 +279,7 @@ def _run_locked(paths: ProjectPaths, request: dict, full_refresh: bool) -> dict:
         "selected_at_utc": datetime.now(UTC).isoformat(),
         "historical_as_of_availability": "unknown",
     }
+    warehouse_published = False
     journal.write_text(json.dumps(state, indent=2))
     try:
         previous, history, captures = {}, [], {}
@@ -365,15 +367,36 @@ def _run_locked(paths: ProjectPaths, request: dict, full_refresh: bool) -> dict:
             connection.execute("checkpoint")
         journal.write_text(json.dumps(state, indent=2))
         paths.warehouse.mkdir(parents=True, exist_ok=True)
-        # No fallible work after this single publication boundary. Metadata travels in the DB.
+        # The mutable database and read pointer are separate atomic boundaries. If
+        # snapshot publication fails, readers retain the prior immutable version.
         os.replace(database, published)
+        warehouse_published = True
+        state["status"] = "warehouse_published"
+        journal.write_text(json.dumps(state, indent=2))
+        snapshot = publish_snapshot(
+            paths.root,
+            {
+                "kind": "source_replacement",
+                "run_id": run_id,
+                "full_refresh": full_refresh,
+            },
+        )
+        state["status"] = "published"
+        state["snapshot_id"] = snapshot["snapshot_id"]
+        journal.write_text(json.dumps(state, indent=2))
         return {
             **state,
             "status": "published",
             "warehouse": str(published),
+            "snapshot": snapshot,
             "evidence": str(candidate.root),
         }
     except Exception as exc:
-        state.update(status="failed_unpublished", error=f"{type(exc).__name__}: {exc}")
+        status = (
+            "warehouse_published_snapshot_failed"
+            if warehouse_published
+            else "failed_unpublished"
+        )
+        state.update(status=status, error=f"{type(exc).__name__}: {exc}")
         journal.write_text(json.dumps(state, indent=2))
         raise
